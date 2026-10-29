@@ -1,35 +1,78 @@
-import { PluginSettingTab, Setting, type App } from 'obsidian';
+import {PluginSettingTab, type App, type SettingDefinitionItem} from 'obsidian';
 import type SeoAuditPlugin from '../main';
-import { cleanSettings } from './settings';
+import {cleanSettings} from './settings';
 
 export class AuditSettingTab extends PluginSettingTab {
-  constructor(app: App, private audit: SeoAuditPlugin) { super(app, audit); }
-  display(): void {
-    const { containerEl } = this; containerEl.empty();
-    const t = this.audit.t;
-    new Setting(containerEl).setName(t('settings')).setHeading();
-    new Setting(containerEl).setName(t('property')).setDesc(t('propertyHelp')).addText(text => text
-      .setValue(this.audit.data.settings.urlProperty).onChange(value => {
-        this.audit.data.settings.urlProperty = value.trim() || 'url'; this.audit.scheduleSave(); void this.audit.reindex();
-      }));
-    new Setting(containerEl).setName(t('concurrency')).setDesc(t('concurrencyHelp')).addText(text => {
-      text.inputEl.type = 'number'; text.inputEl.min = '1'; text.inputEl.max = '20'; text.inputEl.step = '1';
-      text.setValue(String(this.audit.data.settings.concurrency)).onChange(value => {
-        if (!value || !Number.isFinite(Number(value))) return;
-        this.audit.data.settings = cleanSettings({ ...this.audit.data.settings, concurrency: Number(value) }); this.audit.scheduleSave();
-      });
-    });
-    new Setting(containerEl).setName(t('timeout')).setDesc(t('timeoutHelp')).addText(text => {
-      text.inputEl.type = 'number'; text.inputEl.min = '1'; text.inputEl.max = '300';
-      text.setValue(String(this.audit.data.settings.timeoutMs / 1000)).onChange(value => {
-        if (!value || !Number.isFinite(Number(value))) return;
-        this.audit.data.settings = cleanSettings({ ...this.audit.data.settings, timeoutMs: Number(value) * 1000 }); this.audit.scheduleSave();
-      });
-    });
-    new Setting(containerEl).setName(t('language')).addDropdown(dropdown => dropdown.addOption('auto', t('auto')).addOption('en', t('english')).addOption('uk', t('ukrainian'))
-      .setValue(this.audit.data.settings.language).onChange(value => {
-        this.audit.data.settings.language = value === 'en' || value === 'uk' ? value : 'auto';
-        this.audit.scheduleSave(); this.audit.notify(); this.display();
-      }));
-  }
+	constructor(app: App, private audit: SeoAuditPlugin) {
+		super(app, audit);
+	}
+
+	/** Render callbacks preserve nested settings storage and coordinated saves. */
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		const t = this.audit.t;
+		return [{
+			type: 'group',
+			heading: t('settings'),
+			items: [
+				{
+					name: t('property'), desc: t('propertyHelp'),
+					render: setting => {
+						setting.addText(text => text
+							.setValue(this.audit.data.settings.urlProperty).onChange(value => {
+								this.audit.data.settings.urlProperty = value.trim() || 'url';
+								this.audit.scheduleSave();
+								void this.audit.reindex();
+							}));
+					},
+				},
+				{
+					name: t('concurrency'), desc: t('concurrencyHelp'),
+					render: setting => {
+						setting.addText(text => {
+							text.inputEl.type = 'number';
+							text.inputEl.min = '1';
+							text.inputEl.max = '20';
+							text.inputEl.step = '1';
+							text.setValue(String(this.audit.data.settings.concurrency)).onChange(value => {
+								if (!value || !Number.isFinite(Number(value))) {
+									return;
+								}
+								this.audit.data.settings = cleanSettings({...this.audit.data.settings, concurrency: Number(value)});
+								this.audit.scheduleSave();
+							});
+						});
+					},
+				},
+				{
+					name: t('timeout'), desc: t('timeoutHelp'),
+					render: setting => {
+						setting.addText(text => {
+							text.inputEl.type = 'number';
+							text.inputEl.min = '1';
+							text.inputEl.max = '300';
+							text.setValue(String(this.audit.data.settings.timeoutMs / 1000)).onChange(value => {
+								if (!value || !Number.isFinite(Number(value))) {
+									return;
+								}
+								this.audit.data.settings = cleanSettings({...this.audit.data.settings, timeoutMs: Number(value) * 1000});
+								this.audit.scheduleSave();
+							});
+						});
+					},
+				},
+				{
+					name: t('language'),
+					render: setting => {
+						setting.addDropdown(dropdown => dropdown.addOption('auto', t('auto')).addOption('en', t('english')).addOption('uk', t('ukrainian'))
+							.setValue(this.audit.data.settings.language).onChange(value => {
+								this.audit.data.settings.language = value === 'en' || value === 'uk' ? value : 'auto';
+								this.audit.scheduleSave();
+								this.audit.notify();
+								this.update();
+							}));
+					},
+				},
+			],
+		}];
+	}
 }

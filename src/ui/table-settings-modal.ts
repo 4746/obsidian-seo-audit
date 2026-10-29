@@ -15,7 +15,9 @@ export class TableSettingsModal extends Modal {
   onOpen(): void {
     this.render();
     this.unsubscribe = this.plugin.subscribe(() => {
-      if (this.locale !== this.plugin.t('open')) this.render();
+      if (this.locale !== this.plugin.t('open')) {
+this.render();
+}
     });
   }
 
@@ -36,7 +38,11 @@ export class TableSettingsModal extends Modal {
       el(label, 'span', columnLabel(column, t));
       checkbox.onchange = () => {
         const visible = new Set(this.plugin.data.settings.visibleColumns);
-        if (checkbox.checked) visible.add(column); else visible.delete(column);
+        if (checkbox.checked) {
+visible.add(column);
+} else {
+visible.delete(column);
+}
         this.plugin.data.settings.visibleColumns = [...visible];
         this.plugin.scheduleSave();
         this.renderTable();

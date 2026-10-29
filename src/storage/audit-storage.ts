@@ -7,14 +7,30 @@ function validValues(value: unknown): boolean {
   return Array.isArray(value) && value.every(v => object(v) && typeof v.value === 'string' && typeof v.length === 'number' && v.length === codePointLength(v.value));
 }
 export function validResult(v: unknown): v is AuditResult {
-  if (!object(v) || typeof v.url !== 'string' || typeof v.scannedAt !== 'string' || !Number.isFinite(Date.parse(v.scannedAt))) return false;
-  if (v.finalUrl !== null && typeof v.finalUrl !== 'string') return false;
-  if (v.contentType !== null && typeof v.contentType !== 'string') return false;
-  if (v.status !== null && (typeof v.status !== 'number' || !Number.isInteger(v.status) || v.status < 100 || v.status > 599)) return false;
-  if (v.responseTimeMs !== null && (typeof v.responseTimeMs !== 'number' || !Number.isFinite(v.responseTimeMs) || v.responseTimeMs < 0)) return false;
-  if (!validValues(v.xRobotsTag)) return false;
-  if (v.error !== null && (!object(v.error) || !['network', 'timeout', 'invalid-response', 'non-html', 'parse', 'http'].includes(String(v.error.kind)) || typeof v.error.message !== 'string')) return false;
-  if (v.metadata === null) return true;
+  if (!object(v) || typeof v.url !== 'string' || typeof v.scannedAt !== 'string' || !Number.isFinite(Date.parse(v.scannedAt))) {
+return false;
+}
+  if (v.finalUrl !== null && typeof v.finalUrl !== 'string') {
+return false;
+}
+  if (v.contentType !== null && typeof v.contentType !== 'string') {
+return false;
+}
+  if (v.status !== null && (typeof v.status !== 'number' || !Number.isInteger(v.status) || v.status < 100 || v.status > 599)) {
+return false;
+}
+  if (v.responseTimeMs !== null && (typeof v.responseTimeMs !== 'number' || !Number.isFinite(v.responseTimeMs) || v.responseTimeMs < 0)) {
+return false;
+}
+  if (!validValues(v.xRobotsTag)) {
+return false;
+}
+  if (v.error !== null && (!object(v.error) || !['network', 'timeout', 'invalid-response', 'non-html', 'parse', 'http'].includes(String(v.error.kind)) || typeof v.error.message !== 'string')) {
+return false;
+}
+  if (v.metadata === null) {
+return true;
+}
   const m = v.metadata;
   return object(m) && object(m.fields) && fieldKeys.every(k => validValues((m.fields as Record<string, unknown>)[k])) && validValues(m.h1)
     && m.h1Count === (m.h1 as unknown[]).length && Array.isArray(m.alternates)
@@ -22,13 +38,17 @@ export function validResult(v: unknown): v is AuditResult {
 }
 
 export function loadData(raw: unknown): PluginData {
-  if (raw == null) return { schemaVersion: 1, settings: cleanSettings(null), cache: { schemaVersion: 1, latest: Object.create(null) as Record<string, AuditResult> } };
+  if (raw == null) {
+return { schemaVersion: 1, settings: cleanSettings(null), cache: { schemaVersion: 1, latest: Object.create(null) as Record<string, AuditResult> } };
+}
   if (!object(raw) || raw.schemaVersion !== 1 || !object(raw.cache) || raw.cache.schemaVersion !== 1 || !object(raw.cache.latest)) {
     throw new Error('Unsupported or invalid SEO Audit data schema. Existing data was not overwritten.');
   }
   const latest: Record<string, AuditResult> = Object.create(null) as Record<string, AuditResult>;
   for (const [url, value] of Object.entries(raw.cache.latest)) {
-    if (!validResult(value) || value.url !== url) throw new Error('Invalid SEO Audit cache. Existing data was not overwritten.');
+    if (!validResult(value) || value.url !== url) {
+throw new Error('Invalid SEO Audit cache. Existing data was not overwritten.');
+}
     latest[url] = value;
   }
   return { schemaVersion: 1, settings: cleanSettings(raw.settings), cache: { schemaVersion: 1, latest } };
@@ -57,14 +77,25 @@ export class AuditStorage {
   }
   scheduleSave(): void {
     this.dirty = true;
-    if (this.timer !== undefined || this.disposed) return;
-    this.timer = window.setTimeout(() => { this.timer = undefined; void this.flush(); }, 1500);
+    if (this.timer !== undefined || this.disposed) {
+return;
+}
+    this.timer = window.setTimeout(() => {
+ this.timer = undefined; void this.flush(); 
+}, 1500);
   }
   async flush(): Promise<void> {
-    if (!this.dirty) return;
+    if (!this.dirty) {
+return;
+}
     this.dirty = false;
-    try { await this.saves.save(this.data); }
-    catch (error) { this.dirty = true; this.onError(error); }
+    try {
+ await this.saves.save(this.data); 
+} catch (error) {
+ this.dirty = true; this.onError(error); 
+}
   }
-  dispose(): void { this.disposed = true; window.clearTimeout(this.timer); void this.flush(); }
+  dispose(): void {
+ this.disposed = true; window.clearTimeout(this.timer); void this.flush(); 
+}
 }

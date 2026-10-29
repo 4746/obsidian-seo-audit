@@ -10,7 +10,9 @@ export function button(parent: HTMLElement, text: string, action: () => void): H
 export function select(parent: HTMLElement, label: string, options: [string, string][], value: string, change: (value: string) => void): HTMLSelectElement {
   const wrap = el(parent, 'label', undefined, 'seo-audit-control'); el(wrap, 'span', label);
   const node = el(wrap, 'select'); node.setAttribute('aria-label', label);
-  for (const [key, text] of options) { const option = el(node, 'option', text); option.value = key; }
+  for (const [key, text] of options) {
+ const option = el(node, 'option', text); option.value = key; 
+}
   node.value = value; node.onchange = () => change(node.value); return node;
 }
 export function fileLinks(parent: HTMLElement, page: IndexedPage, t: Translator, openFile: (path: string) => void): void {

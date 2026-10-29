@@ -27,10 +27,18 @@ export class AuditView extends ItemView {
   private tableSignature = '';
   private tableResults: (AuditResult | undefined)[] = [];
 
-  constructor(leaf: WorkspaceLeaf, private plugin: AuditController) { super(leaf); }
-  getViewType(): string { return VIEW_TYPE; }
-  getDisplayText(): string { return this.plugin.t('pluginName'); }
-  getIcon(): string { return 'search-check'; }
+  constructor(leaf: WorkspaceLeaf, private plugin: AuditController) {
+ super(leaf); 
+}
+  getViewType(): string {
+ return VIEW_TYPE; 
+}
+  getDisplayText(): string {
+ return this.plugin.t('pluginName'); 
+}
+  getIcon(): string {
+ return 'search-check'; 
+}
   onPaneMenu(menu: Menu, source: string): void {
     const t = this.plugin.t;
     const running = this.plugin.scanner.progress.running;
@@ -48,7 +56,9 @@ export class AuditView extends ItemView {
         try {
           const pages = this.plugin.index.pages();
           download((format === 'json' ? exportJson : exportCsv)(pages, this.plugin.data.cache.latest), format);
-        } catch (error) { console.error('SEO Audit export', error); new Notice(t('downloadFailed')); }
+        } catch (error) {
+ console.error('SEO Audit export', error); new Notice(t('downloadFailed')); 
+}
       }));
     }
     menu.addItem(item => item.setTitle(t('tableSettings')).setIcon('settings').onClick(() => {
@@ -63,11 +73,16 @@ export class AuditView extends ItemView {
     this.contentEl.addClass('seo-audit');
     this.build();
     this.unsubscribe = this.plugin.subscribe(() => {
-      if (this.renderTimer) return;
+      if (this.renderTimer) {
+return;
+}
       this.renderTimer = window.setTimeout(() => {
         this.renderTimer = undefined;
-        if (this.lastLocale !== this.plugin.t('open')) this.build();
-        else this.refresh();
+        if (this.lastLocale !== this.plugin.t('open')) {
+this.build();
+} else {
+this.refresh();
+}
       }, 150);
     });
   }
@@ -83,11 +98,21 @@ export class AuditView extends ItemView {
     this.tableSignature = '';
     const filters = el(this.contentEl, 'div', undefined, 'seo-audit-toolbar');
     const search = el(filters, 'input'); search.type = 'search'; search.placeholder = t('search'); search.setAttribute('aria-label', t('search')); search.value = this.tableState.filter.search;
-    search.oninput = () => { window.clearTimeout(this.searchTimer); this.searchTimer = window.setTimeout(() => { this.tableState.filter.search = search.value; this.tableState.page = 0; this.renderTable(); }, 200); };
+    search.oninput = () => {
+ window.clearTimeout(this.searchTimer); this.searchTimer = window.setTimeout(() => {
+ this.tableState.filter.search = search.value; this.tableState.page = 0; this.renderTable(); 
+}, 200); 
+};
     this.statusOptions = '';
-    this.statusFilter = select(filters, t('status'), [], this.tableState.filter.status, value => { this.tableState.filter.status = value; this.tableState.page = 0; this.renderTable(); });
-    select(filters, t('metadataFilter'), fieldKeys.map(k => [k, k]), this.tableState.filter.field, value => { this.tableState.filter.field = value as TableFilter['field']; this.tableState.page = 0; this.renderTable(); });
-    select(filters, '', [['any', t('any')], ['present', t('present')], ['missing', t('missing')]], this.tableState.filter.presence, value => { this.tableState.filter.presence = value; this.tableState.page = 0; this.renderTable(); }).setAttribute('aria-label', t('metadataFilter'));
+    this.statusFilter = select(filters, t('status'), [], this.tableState.filter.status, value => {
+ this.tableState.filter.status = value; this.tableState.page = 0; this.renderTable(); 
+});
+    select(filters, t('metadataFilter'), fieldKeys.map(k => [k, k]), this.tableState.filter.field, value => {
+ this.tableState.filter.field = value as TableFilter['field']; this.tableState.page = 0; this.renderTable(); 
+});
+    select(filters, '', [['any', t('any')], ['present', t('present')], ['missing', t('missing')]], this.tableState.filter.presence, value => {
+ this.tableState.filter.presence = value; this.tableState.page = 0; this.renderTable(); 
+}).setAttribute('aria-label', t('metadataFilter'));
     this.progressHost = el(this.contentEl, 'div', undefined, 'seo-audit-progress'); this.progressHost.setAttribute('role', 'status'); this.progressHost.setAttribute('aria-live', 'polite');
     this.tableHost = el(this.contentEl, 'div');
     this.detailHost = el(this.contentEl, 'section', undefined, 'seo-audit-details');
@@ -95,7 +120,11 @@ export class AuditView extends ItemView {
   }
   private refresh(): void {
     const pages = new Set(this.plugin.index.pages().map(p => p.url));
-    for (const url of this.tableState.selected) if (!pages.has(url)) this.tableState.selected.delete(url);
+    for (const url of this.tableState.selected) {
+if (!pages.has(url)) {
+this.tableState.selected.delete(url);
+}
+}
     const p = this.plugin.scanner.progress; const t = this.plugin.t;
     const statuses = [...new Set(Object.values(this.plugin.data.cache.latest).flatMap(r => r.status === null ? [] : [r.status]))].sort((a, b) => a - b);
     const signature = JSON.stringify([statuses, this.tableState.filter.status]);
@@ -103,8 +132,12 @@ export class AuditView extends ItemView {
       this.statusOptions = signature;
       this.statusFilter.replaceChildren();
       const options: [string, string][] = [['any', t('any')], ['unscanned', t('unscanned')], ['errors', t('errors')], ...['1xx', '2xx', '3xx', '4xx', '5xx'].map(s => [s, s] as [string, string]), ...statuses.map(s => [String(s), String(s)] as [string, string])];
-      if (!options.some(([value]) => value === this.tableState.filter.status)) options.push([this.tableState.filter.status, this.tableState.filter.status]);
-      for (const [value, label] of options) { const option = el(this.statusFilter, 'option', label); option.value = value; }
+      if (!options.some(([value]) => value === this.tableState.filter.status)) {
+options.push([this.tableState.filter.status, this.tableState.filter.status]);
+}
+      for (const [value, label] of options) {
+ const option = el(this.statusFilter, 'option', label); option.value = value; 
+}
       this.statusFilter.value = this.tableState.filter.status;
     }
     this.progressHost.replaceChildren();
@@ -114,7 +147,9 @@ export class AuditView extends ItemView {
   }
   private openFile = (path: string): void => {
     const file = this.app.vault.getFileByPath(path);
-    if (file) void this.app.workspace.getLeaf(true).openFile(file);
+    if (file) {
+void this.app.workspace.getLeaf(true).openFile(file);
+}
   };
   private renderTable(force = true): void {
     const pages = this.plugin.index.pages();

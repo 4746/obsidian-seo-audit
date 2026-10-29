@@ -2,7 +2,7 @@
   "id": "seo-audit",
   "name": "Obsidian SEO Audit",
   "version": "1.0.0",
-  "minAppVersion": "1.8.7",
+  "minAppVersion": "1.13.0",
   "description": "Analyze and export SEO metadata for page URLs in Markdown frontmatter.",
   "author": "Vadim",
   "isDesktopOnly": false

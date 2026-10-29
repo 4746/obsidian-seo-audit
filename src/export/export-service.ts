@@ -7,14 +7,18 @@ export function exportJson(pages: IndexedPage[], latest: Record<string, AuditRes
 /** Prevent spreadsheet execution even when a value starts with control characters. */
 function startsFormula(text: string): boolean {
   for (const char of text) {
-    if (char.charCodeAt(0) > 31 && !/\s/u.test(char)) return /^[=+@-]$/.test(char);
+    if (char.charCodeAt(0) > 31 && !/\s/u.test(char)) {
+return /^[=+@-]$/.test(char);
+}
   }
   return false;
 }
 
 function cell(value: unknown): string {
   let text = value == null ? '' : typeof value === 'string' ? value : JSON.stringify(value);
-  if (startsFormula(text) || /^[\t\r\n]/.test(text)) text = `'${text}`;
+  if (startsFormula(text) || /^[\t\r\n]/.test(text)) {
+text = `'${text}`;
+}
   return `"${text.replace(/"/g, '""')}"`;
 }
 
