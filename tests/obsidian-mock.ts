@@ -34,3 +34,4 @@ export class Modal {
 }
 
 export function setIcon(element: HTMLElement, icon: string): void { element.dataset.icon = icon; }
+export function setTooltip(element: HTMLElement, tooltip: string): void { element.dataset.tooltip = tooltip; }

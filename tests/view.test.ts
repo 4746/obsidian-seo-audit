@@ -172,7 +172,7 @@ it('opens details outside the table and reuses the sidebar for another row', asy
   rows[1]!.click();
   expect(document.querySelectorAll('.seo-audit-details')).toHaveLength(1);
   expect(s.detailsView.contentEl.textContent).toContain('https://page1.test');
-  s.detailsView.contentEl.querySelector('button')!.click();
+  s.detailsView.contentEl.querySelector<HTMLButtonElement>('.seo-audit-detail-close')!.click();
   expect(s.detach).toHaveBeenCalledOnce();
   await s.detailsView.onClose();
   await s.view.onClose();
@@ -200,6 +200,37 @@ it('keeps accordion choices across result updates and uses an icon to close deta
   s.detailsView.setPage('https://page0.test');
   expect(host.querySelector<HTMLDetailsElement>('[data-section="seo"]')!.open).toBe(true);
   expect(host.querySelector<HTMLDetailsElement>('[data-section="og"]')!.open).toBe(false);
+  await s.detailsView.onClose();
+  await s.view.onClose();
+});
+
+it('scans only the sidebar page and offers refresh after results arrive', async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  s.detailsView.setPage('https://page1.test');
+  const host = s.detailsView.contentEl;
+  const scanButton = () => host.querySelector<HTMLButtonElement>('.seo-audit-detail-scan')!;
+  expect(host.querySelector('.seo-audit-detail-empty')!.textContent).toContain('Not scanned');
+  expect(scanButton().dataset.tooltip).toBe('Scan page');
+  expect(scanButton().textContent).toBe('');
+  expect(s.scan).not.toHaveBeenCalled();
+  scanButton().click();
+  scanButton().click();
+  expect(s.scan).toHaveBeenCalledExactlyOnceWith(['https://page1.test']);
+  expect(scanButton().disabled).toBe(true);
+  s.plugin.scanner.progress.running = true;
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(scanButton().disabled).toBe(true);
+  expect(scanButton().dataset.tooltip).toBe('Scan in progress');
+  s.data.cache.latest['https://page1.test'] = { url: 'https://page1.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], error: null, metadata: parseHtml('<title>Updated page</title>') };
+  s.plugin.scanner.progress.running = false;
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(host.querySelector('.seo-audit-detail-empty')).toBeNull();
+  expect(scanButton().disabled).toBe(false);
+  expect(scanButton().dataset.tooltip).toBe('Refresh page data');
+  expect(scanButton().dataset.icon).toBe('refresh-cw');
+  scanButton().click();
+  expect(s.scan).toHaveBeenNthCalledWith(2, ['https://page1.test']);
   await s.detailsView.onClose();
   await s.view.onClose();
 });

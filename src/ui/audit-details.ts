@@ -1,4 +1,4 @@
-import { setIcon } from 'obsidian';
+import { setIcon, setTooltip } from 'obsidian';
 import type { FieldKey, FieldValue } from '../types';
 import type { Translator } from '../i18n';
 import type { AuditController } from './audit-controller';
@@ -34,7 +34,24 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
   }
   const header = el(host, 'div', undefined, 'seo-audit-detail-header');
   el(header, 'h3', t('details'));
-  const closeButton = button(header, '', close);
+  const r = controller.data.cache.latest[page.url];
+  const actions = el(header, 'div', undefined, 'seo-audit-detail-actions');
+  const scanButton = button(actions, '', () => {
+    if (controller.scanner.progress.running) {
+      return;
+    }
+    scanButton.disabled = true;
+    setTooltip(scanButton, t('scanBusy'));
+    scanButton.setAttribute('aria-label', t('scanBusy'));
+    controller.scan([page.url]);
+  });
+  scanButton.classList.add('clickable-icon', 'seo-audit-detail-scan');
+  scanButton.disabled = controller.scanner.progress.running;
+  const scanLabel = t(scanButton.disabled ? 'scanBusy' : r ? 'refreshPage' : 'scanPage');
+  scanButton.setAttribute('aria-label', scanLabel);
+  setTooltip(scanButton, scanLabel);
+  setIcon(scanButton, r ? 'refresh-cw' : 'play');
+  const closeButton = button(actions, '', close);
   closeButton.classList.add('clickable-icon', 'seo-audit-detail-close');
   closeButton.setAttribute('aria-label', t('close'));
   setIcon(closeButton, 'x');
@@ -42,9 +59,14 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
   link.href = page.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
   const sources = el(host, 'div', undefined, 'seo-audit-detail-sources');
   fileLinks(sources, page, t, openFile);
-  const r = controller.data.cache.latest[page.url];
   if (!r) {
-    el(host, 'p', t('unscanned'));
+    const empty = el(host, 'div', undefined, 'seo-audit-detail-empty');
+    empty.setAttribute('role', 'status');
+    const icon = el(empty, 'div', undefined, 'seo-audit-detail-empty-icon');
+    icon.setAttribute('aria-hidden', 'true');
+    setIcon(icon, 'file-search');
+    el(empty, 'h4', t('unscanned'));
+    el(empty, 'p', t(controller.scanner.progress.running ? 'scanBusyHelp' : 'unscannedHelp'));
     return;
   }
   if (r.error) {

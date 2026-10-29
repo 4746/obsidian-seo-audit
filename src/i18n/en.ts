@@ -1,4 +1,7 @@
 export const en = {
+  scanPage: 'Scan page', refreshPage: 'Refresh page data', scanBusy: 'Scan in progress',
+  unscannedHelp: 'Use the scan button above to fetch this page’s SEO metadata.',
+  scanBusyHelp: 'Wait for the current scan to finish before starting another.',
   httpResponse: 'HTTP response', basicSeo: 'Basic SEO', openGraph: 'Open Graph', twitterCards: 'Twitter Cards',
   detailsFailed: 'Could not open page details',
   pluginName: 'SEO Audit', english: 'English', ukrainian: 'Українська',
