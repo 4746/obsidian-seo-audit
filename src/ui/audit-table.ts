@@ -91,9 +91,8 @@ export function renderAuditTable(host: HTMLElement, controller: AuditController,
   const pages = filterPages(controller.index.pages(), controller.data.cache.latest, state.filter);
   state.page = Math.max(0, Math.min(state.page, Math.ceil(pages.length / state.pageSize) - 1));
   const visiblePages = pages.slice(state.page * state.pageSize, (state.page + 1) * state.pageSize);
-  // Keep the native scroll container alive across data updates.
+  // Keep the table container alive across data updates.
   const existingWrap = host.querySelector<HTMLElement>('.seo-audit-table-scroll');
-  const scrollLeft = existingWrap?.scrollLeft ?? 0;
   for (const child of Array.from(host.children)) {
     if (child !== existingWrap) {
 child.remove();
@@ -213,5 +212,4 @@ cell.classList.add('seo-audit-error');
     }
   }
   renderPagination();
-  wrap.scrollLeft = scrollLeft;
 }

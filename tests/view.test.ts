@@ -144,15 +144,15 @@ it('preserves native horizontal scrolling through progress and result updates', 
   const s = await setup();
   const wrap = s.view.contentEl.querySelector<HTMLElement>('.seo-audit-table-scroll')!;
   const row = wrap.querySelector('tbody tr');
-  wrap.scrollLeft = 240;
+  s.view.contentEl.scrollLeft = 240;
   s.plugin.scanner.progress.active = 1;
   s.notify(); await vi.advanceTimersByTimeAsync(151);
   expect(wrap.querySelector('tbody tr')).toBe(row);
-  expect(wrap.scrollLeft).toBe(240);
+  expect(s.view.contentEl.scrollLeft).toBe(240);
   s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], error: null, metadata: null };
   s.notify(); await vi.advanceTimersByTimeAsync(151);
   expect(s.view.contentEl.querySelector('.seo-audit-table-scroll')).toBe(wrap);
-  expect(wrap.scrollLeft).toBe(240);
+  expect(s.view.contentEl.scrollLeft).toBe(240);
   expect(wrap.textContent).toContain('200');
   const wheel = new WheelEvent('wheel', { deltaX: 100, bubbles: true, cancelable: true });
   wrap.dispatchEvent(wheel);

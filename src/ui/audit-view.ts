@@ -68,7 +68,7 @@ export class AuditView extends ItemView {
     super.onPaneMenu(menu, source);
   }
   async onOpen(): Promise<void> {
-    this.contentEl.addClass('seo-audit');
+    this.contentEl.addClass('seo-audit', 'seo-audit-main');
     this.build();
     this.unsubscribe = this.plugin.subscribe(() => {
       if (this.renderTimer) {
