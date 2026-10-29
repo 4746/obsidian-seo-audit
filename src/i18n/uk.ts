@@ -1,31 +1,6 @@
-import type { AuditSettings } from './types';
+import type { Message } from './en';
 
-const en = {
-  open: 'Open SEO Audit', all: 'Scan all', selected: 'Scan selected', stop: 'Stop', search: 'Search URLs, files and metadata…',
-  status: 'HTTP status', any: 'All', unscanned: 'Not scanned', errors: 'Errors', present: 'Present', missing: 'Missing',
-  metadataFilter: 'Metadata filter', columns: 'Columns', exportJson: 'Export JSON', exportCsv: 'Export CSV',
-  files: 'Source files', url: 'URL', finalUrl: 'Final URL', responseTimeMs: 'HTTP response time (ms)', scannedAt: 'Last scan',
-  h1Count: 'H1 count', h1: 'H1 headings', alternates: 'Language alternates', xRobotsTag: 'X-Robots-Tag',
-  empty: 'No matching pages. Add an HTTP(S) URL to the configured frontmatter property.',
-  unknown: 'Unavailable', never: 'Never', details: 'Page details', close: 'Close details',
-  select: 'Select page', selectPage: 'Select visible page', previous: 'Previous', next: 'Next', page: 'Page',
-  of: 'of', pages: 'pages', value: 'Original value', length: 'Length (code points)',
-  error: 'Error', contentType: 'Content type', noDetails: 'Select a row to inspect all metadata.',
-  idle: 'Ready', running: 'Scanning', completed: 'completed', active: 'active',
-  settings: 'SEO Audit settings', property: 'Frontmatter URL property',
-  propertyHelp: 'Top-level YAML property containing an HTTP(S) URL or a list of URLs. Default: url.',
-  concurrency: 'Parallel requests', concurrencyHelp: 'Maximum concurrent HTTP requests (1–20). Default: 3.',
-  timeout: 'Request timeout (seconds)', timeoutHelp: '1–300 seconds. Timed-out native requests retain their slot until they finish.',
-  language: 'Interface language', auto: 'Automatic (Obsidian)',
-  saveFailed: 'Could not save SEO Audit data. Check storage and try again.',
-  scanFailed: 'SEO Audit scan failed', loadFailed: 'SEO Audit could not load its data',
-  openFile: 'Open Markdown file', openUrl: 'Open URL in browser', downloadFailed: 'Could not export results',
-  settingsSaved: 'Settings saved', selectedCount: 'selected', reindex: 'Refresh index',
-  timeoutError: 'Request timed out', networkError: 'Network error', nonHtmlError: 'Non-HTML response',
-  parseError: 'HTML parsing error', invalidError: 'Invalid HTTP response', httpError: 'HTTP error',
-};
-type Message = keyof typeof en;
-const uk: Record<Message, string> = {
+export const uk: Record<Message, string> = {
   open: 'Відкрити SEO Audit', all: 'Перевірити всі', selected: 'Перевірити вибрані', stop: 'Зупинити', search: 'Пошук за URL, файлами та метаданими…',
   status: 'HTTP-статус', any: 'Усі', unscanned: 'Не перевірено', errors: 'Помилки', present: 'Є значення', missing: 'Відсутнє',
   metadataFilter: 'Фільтр метаданих', columns: 'Стовпці', exportJson: 'Експорт JSON', exportCsv: 'Експорт CSV',
@@ -49,9 +24,3 @@ const uk: Record<Message, string> = {
   timeoutError: 'Перевищено час очікування', networkError: 'Помилка мережі', nonHtmlError: 'Відповідь не є HTML',
   parseError: 'Помилка парсингу HTML', invalidError: 'Некоректна HTTP-відповідь', httpError: 'HTTP-помилка',
 };
-
-export function translator(language: AuditSettings['language'], obsidianLocale: string): (key: Message) => string {
-  const code = language === 'auto' ? obsidianLocale.toLowerCase().split(/[-_]/)[0] : language;
-  return key => (code === 'uk' ? uk[key] : en[key]) ?? en[key];
-}
-export type Translator = ReturnType<typeof translator>;

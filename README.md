@@ -101,7 +101,7 @@ npm run build      # TypeScript + production bundle
 | `src/parser.ts`, `src/types.ts` | HTML-поля, Unicode-довжини та схема |
 | `src/storage.ts` | Валідація, налаштування та черга збереження |
 | `src/table.ts`, `src/view.ts` | Запити таблиці, ItemView та деталі |
-| `src/settings.ts`, `src/i18n.ts` | Налаштування й переклади |
+| `src/settings.ts`, `src/i18n/` | Налаштування й переклади |
 | `src/export.ts` | JSON/CSV та завантаження файлів |
 
 Для нового текстового SEO-поля розширте `fieldKeys` і його правило парсингу. Таблиця, пошук, деталі, валідація кешу та експорт використовують спільну схему. Майбутні SEO-перевірки можна додати окремим модулем поверх `AuditResult`, не змінюючи початкові значення.
