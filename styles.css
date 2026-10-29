@@ -1,6 +1,6 @@
 .seo-audit { padding: 16px; overflow: auto; }
 /* Keep initial spacing outside the scrollport inset used by sticky headers. */
-.seo-audit.seo-audit-main { padding-top: 0; }
+.seo-audit.seo-audit-main { padding-top: 0; container-type: inline-size; }
 .seo-audit-main > .seo-audit-toolbar:first-child { margin-top: 16px; }
 .seo-audit .seo-audit-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
 .seo-audit .seo-audit-toolbar input[type="search"] { flex: 1 1 260px; }
@@ -16,11 +16,14 @@
 .seo-audit-scan-notice .seo-audit-scan-counter { margin: 8px 0; color: var(--text-muted); font-size: var(--font-ui-small); }
 .seo-audit-scan-notice progress { display: block; width: 100%; height: 8px; margin-bottom: 12px; accent-color: var(--interactive-accent); }
 /* The view scrolls both axes so sticky headers follow its vertical viewport. */
+.seo-audit .seo-audit-table-host { width: max-content; min-width: 100%; }
 .seo-audit .seo-audit-table-scroll { width: max-content; min-width: 100%; overflow: visible; border: 1px solid var(--background-modifier-border); border-radius: 6px; }
 .seo-audit .seo-audit-table { table-layout: auto; width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
 .seo-audit .seo-audit-table th:first-child { width: 36px; min-width: 36px; }
 .seo-audit .seo-audit-table th { min-width: 160px; overflow-wrap: anywhere; }
 .seo-audit .seo-audit-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: 6px; background: var(--background-secondary); }
+/* Match the view width while the containing block spans the entire table. */
+.seo-audit-main .seo-audit-pagination { position: sticky; left: 0; width: 100cqw; box-sizing: border-box; }
 .seo-audit .seo-audit-page-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; text-align: center; font-size: var(--font-ui-small); }
 .seo-audit .seo-audit-page-count { color: var(--text-muted); }
 .seo-audit .seo-audit-url { display: flex; align-items: flex-start; gap: 6px; }

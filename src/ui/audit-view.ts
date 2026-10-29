@@ -113,7 +113,7 @@ this.refresh();
 }).setAttribute('aria-label', t('metadataFilter'));
     this.selectionHost = el(filters, 'span', undefined, 'seo-audit-selection-count');
     this.selectionHost.setAttribute('role', 'status');
-    this.tableHost = el(this.contentEl, 'div');
+    this.tableHost = el(this.contentEl, 'div', undefined, 'seo-audit-table-host');
     this.refresh();
   }
   private refresh(): void {
