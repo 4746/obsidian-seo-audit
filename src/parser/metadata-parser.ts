@@ -1,5 +1,6 @@
 import { fieldKeys, type SeoMetadata } from '../types';
 import { fieldValue } from '../utils/string-length';
+import { addAlternate } from '../utils/alternate-links';
 
 export function parseMetadata(doc: Document): SeoMetadata {
   const fields = Object.fromEntries(fieldKeys.map(key => [key, []])) as unknown as SeoMetadata['fields'];
@@ -19,7 +20,7 @@ fields[key].push(fieldValue(meta.getAttribute('content')!));
 }
     }
   }
-  const alternates: SeoMetadata['alternates'] = [];
+  const alternates = Object.create(null) as SeoMetadata['alternates'];
   for (const link of doc.querySelectorAll('link')) {
     const rels = (link.getAttribute('rel') ?? '').toLowerCase().split(/\s+/);
     const href = link.getAttribute('href');
@@ -28,7 +29,7 @@ fields.canonical.push(fieldValue(href));
 }
     const lang = link.getAttribute('hreflang');
     if (rels.includes('alternate') && lang !== null && href !== null) {
-      alternates.push({ hreflang: fieldValue(lang), href: fieldValue(href) });
+      addAlternate(alternates, lang, href);
     }
   }
   const h1 = Array.from(doc.querySelectorAll('h1'), el => fieldValue(el.textContent ?? ''));

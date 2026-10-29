@@ -7,6 +7,7 @@ import { AuditStorage, loadData } from './storage/audit-storage';
 import { AuditSettingTab } from './settings/settings-tab';
 import { AuditView, VIEW_TYPE } from './ui/audit-view';
 import { AuditDetailsView, DETAILS_VIEW_TYPE } from './ui/audit-details-view';
+import { ScanProgressNotice } from './ui/scan-progress-notice';
 import type { PluginData } from './types';
 
 export default class SeoAuditPlugin extends Plugin {
@@ -17,6 +18,7 @@ export default class SeoAuditPlugin extends Plugin {
   private listeners = new Set<() => void>();
   private disposed = false;
   private detailsQueue: Promise<void> = Promise.resolve();
+  private scanNotice: ScanProgressNotice | null = null;
   get t(): Translator {
  return translator(this.data?.settings.language ?? 'auto', getLanguage()); 
 }
@@ -28,6 +30,7 @@ export default class SeoAuditPlugin extends Plugin {
       new Notice(`${this.t('loadFailed')}: ${error instanceof Error ? error.message : String(error)}`, 15000);
       throw error;
     }
+    this.scanNotice = new ScanProgressNotice(() => this.t, () => this.scanner.stop());
     this.storage = new AuditStorage(this.data, data => this.saveData(data), error => {
       console.error('SEO Audit save', error); new Notice(this.t('saveFailed'));
     });
@@ -55,6 +58,9 @@ return;
 }
   notify(): void {
  if (!this.disposed) {
+    if (this.scanner) {
+      this.scanNotice?.update(this.scanner.progress);
+    }
 for (const listener of this.listeners) {
 listener();
 }
@@ -110,6 +116,7 @@ void this.storage.flush();
   }
   onunload(): void {
     this.disposed = true; this.scanner?.stop(); this.index?.dispose();
+    this.scanNotice?.hide();
     this.listeners.clear(); this.storage?.dispose();
   }
 }

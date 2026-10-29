@@ -1,7 +1,7 @@
 import { fieldKeys, type AuditResult, type IndexedPage } from '../types';
 
 export function exportJson(pages: IndexedPage[], latest: Record<string, AuditResult>): string {
-  return JSON.stringify({ schemaVersion: 1, exportedAt: new Date().toISOString(), pages: pages.map(page => ({ ...page, result: latest[page.url] ?? null })) }, null, 2);
+  return JSON.stringify({ schemaVersion: 2, exportedAt: new Date().toISOString(), pages: pages.map(page => ({ ...page, result: latest[page.url] ?? null })) }, null, 2);
 }
 
 /** Prevent spreadsheet execution even when a value starts with control characters. */

@@ -7,20 +7,6 @@ import type { AuditResult, PluginData } from '../src/types';
 
 const result: AuditResult = { url: 'https://a.test', finalUrl: null, scannedAt: '2026-10-29T00:00:00Z', status: 200, responseTimeMs: 42, xRobotsTag: [], error: null, metadata: parseHtml('<title>=HYPERLINK("bad")</title><meta name="description" content="one"><meta name="description" content="two">') };
 describe('storage', () => {
-  it('loads older caches while removing the retired content type field and column', () => {
-    const data = loadData(null);
-    const legacyResult = { ...result, contentType: 'text/html' };
-    data.cache.latest[result.url] = legacyResult;
-    data.settings.visibleColumns = ['url', 'contentType', 'title'];
-    const loaded = loadData(data);
-    expect(loaded.cache.latest[result.url]).toEqual(result);
-    expect(loaded.cache.latest[result.url]).not.toHaveProperty('contentType');
-    expect(loaded.settings.visibleColumns).toEqual(['url', 'title']);
-    expect(legacyResult.contentType).toBe('text/html');
-    const pages = [{ url: result.url, files: ['a.md'] }];
-    expect(exportJson(pages, loaded.cache.latest)).not.toContain('contentType');
-    expect(exportCsv(pages, loaded.cache.latest)).not.toContain('contentType');
-  });
   it('separates settings/cache and validates versions/lengths without overwriting', () => {
     const data = loadData(null); data.cache.latest[result.url] = result;
     expect(loadData(JSON.parse(JSON.stringify(data)))).toEqual(data);

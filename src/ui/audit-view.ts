@@ -14,7 +14,7 @@ export class AuditView extends ItemView {
     filter: { search: '', status: 'any', field: 'title', presence: 'any', sort: 'url', descending: false },
   };
   private tableHost!: HTMLElement;
-  private progressHost!: HTMLElement;
+  private selectionHost!: HTMLElement;
   private settingsModal: TableSettingsModal | null = null;
   private unsubscribe: (() => void) | null = null;
   private renderTimer: number | undefined;
@@ -111,7 +111,8 @@ this.refresh();
     select(filters, '', [['any', t('any')], ['present', t('present')], ['missing', t('missing')]], this.tableState.filter.presence, value => {
  this.tableState.filter.presence = value; this.tableState.page = 0; this.renderTable(); 
 }).setAttribute('aria-label', t('metadataFilter'));
-    this.progressHost = el(this.contentEl, 'div', undefined, 'seo-audit-progress'); this.progressHost.setAttribute('role', 'status'); this.progressHost.setAttribute('aria-live', 'polite');
+    this.selectionHost = el(filters, 'span', undefined, 'seo-audit-selection-count');
+    this.selectionHost.setAttribute('role', 'status');
     this.tableHost = el(this.contentEl, 'div');
     this.refresh();
   }
@@ -122,7 +123,7 @@ if (!pages.has(url)) {
 this.tableState.selected.delete(url);
 }
 }
-    const p = this.plugin.scanner.progress; const t = this.plugin.t;
+    const t = this.plugin.t;
     const statuses = [...new Set(Object.values(this.plugin.data.cache.latest).flatMap(r => r.status === null ? [] : [r.status]))].sort((a, b) => a - b);
     const signature = JSON.stringify([statuses, this.tableState.filter.status]);
     if (signature !== this.statusOptions) {
@@ -137,9 +138,8 @@ options.push([this.tableState.filter.status, this.tableState.filter.status]);
 }
       this.statusFilter.value = this.tableState.filter.status;
     }
-    this.progressHost.replaceChildren();
-    el(this.progressHost, 'span', `${t(p.running ? 'running' : 'idle')} · ${p.completed}/${p.total} ${t('completed')} · ${p.active} ${t('active')} · ${this.tableState.selected.size} ${t('selectedCount')}`);
-    const progress = el(this.progressHost, 'progress'); progress.max = p.total || 1; progress.value = p.completed;
+    this.selectionHost.hidden = this.tableState.selected.size === 0;
+    this.selectionHost.textContent = `${this.tableState.selected.size} ${t('selectedCount')}`;
     this.renderTable(false);
   }
   private openFile = (path: string): void => {

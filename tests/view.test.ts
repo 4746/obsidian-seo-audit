@@ -33,10 +33,15 @@ async function setup(count = 2) {
 }
 it('paginates large indices and scans all/selected unique URLs', async () => {
   const s = await setup(120);
+  const selection = s.view.contentEl.querySelector<HTMLElement>('.seo-audit-selection-count')!;
+  expect(selection.hidden).toBe(true);
+  expect(s.view.contentEl.querySelector('progress')).toBeNull();
   expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(50);
   const all = menuFor(s.view).items.find(item => item.title === 'Scan all')!;
   all.action(); expect(s.scan.mock.calls[0]?.[0]).toHaveLength(120);
   const check = s.view.contentEl.querySelector<HTMLInputElement>('tbody input')!; check.click();
+  expect(selection.hidden).toBe(false);
+  expect(selection.textContent).toBe('1 selected');
   const selected = menuFor(s.view).items.find(item => item.title === 'Scan selected')!;
   selected.action(); expect(s.scan.mock.calls[1]?.[0]).toHaveLength(1);
   await s.view.onClose();
@@ -231,6 +236,25 @@ it('scans only the sidebar page and offers refresh after results arrive', async 
   expect(scanButton().dataset.icon).toBe('refresh-cw');
   scanButton().click();
   expect(s.scan).toHaveBeenNthCalledWith(2, ['https://page1.test']);
+  await s.detailsView.onClose();
+  await s.view.onClose();
+});
+
+it('shows comma-separated language codes with URL tooltips and keeps alternate URLs searchable', async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  s.data.settings.visibleColumns = ['alternates'];
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], error: null, metadata: parseHtml('<link rel="alternate" hreflang="de" href="https://example.test/de"><link rel="alternate" hreflang="uk" href="https://example.test/uk"><link rel="alternate" hreflang="de" href="https://example.test/de/other">') };
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  const codes = s.view.contentEl.querySelectorAll<HTMLElement>('.seo-audit-language-code');
+  expect(Array.from(codes).map(code => code.textContent)).toEqual(['de', 'uk']);
+  expect(codes[0]!.parentElement!.textContent).toBe('de, uk');
+  expect(codes[0]!.dataset.tooltip).toBe('https://example.test/de\nhttps://example.test/de/other');
+  expect(codes[1]!.dataset.tooltip).toBe('https://example.test/uk');
+  const search = s.view.contentEl.querySelector<HTMLInputElement>('input[type="search"]')!;
+  search.value = 'example.test/de/other'; search.dispatchEvent(new Event('input'));
+  await vi.advanceTimersByTimeAsync(201);
+  expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(1);
   await s.detailsView.onClose();
   await s.view.onClose();
 });

@@ -5,7 +5,17 @@ export class ItemView {
   app: unknown;
   constructor(public leaf: { app: unknown; detach?: () => void }) { this.app = leaf.app; }
 }
-export class Notice { constructor(public text: string) {} }
+export class Notice {
+  static instances: Notice[] = [];
+  messageEl = document.createElement('div');
+  hidden = false;
+  constructor(public text: string | DocumentFragment, public duration?: number) {
+    if (typeof text === 'string') this.messageEl.textContent = text;
+    else this.messageEl.appendChild(text);
+    Notice.instances.push(this);
+  }
+  hide() { this.hidden = true; }
+}
 export class TFile {
   extension = 'md';
   constructor(public path: string) {}

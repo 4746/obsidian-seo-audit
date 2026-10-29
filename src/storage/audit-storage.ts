@@ -30,15 +30,15 @@ return true;
 }
   const m = v.metadata;
   return object(m) && object(m.fields) && fieldKeys.every(k => validValues((m.fields as Record<string, unknown>)[k])) && validValues(m.h1)
-    && m.h1Count === (m.h1 as unknown[]).length && Array.isArray(m.alternates)
-    && m.alternates.every(a => object(a) && validValues([a.hreflang]) && validValues([a.href]));
+    && m.h1Count === (m.h1 as unknown[]).length && object(m.alternates)
+    && Object.values(m.alternates).every(value => typeof value === 'string' || (Array.isArray(value) && value.length > 0 && value.every(href => typeof href === 'string')));
 }
 
 export function loadData(raw: unknown): PluginData {
   if (raw == null) {
-return { schemaVersion: 1, settings: cleanSettings(null), cache: { schemaVersion: 1, latest: Object.create(null) as Record<string, AuditResult> } };
+return { schemaVersion: 1, settings: cleanSettings(null), cache: { schemaVersion: 2, latest: Object.create(null) as Record<string, AuditResult> } };
 }
-  if (!object(raw) || raw.schemaVersion !== 1 || !object(raw.cache) || raw.cache.schemaVersion !== 1 || !object(raw.cache.latest)) {
+  if (!object(raw) || raw.schemaVersion !== 1 || !object(raw.cache) || raw.cache.schemaVersion !== 2 || !object(raw.cache.latest)) {
     throw new Error('Unsupported or invalid SEO Audit data schema. Existing data was not overwritten.');
   }
   const latest: Record<string, AuditResult> = Object.create(null) as Record<string, AuditResult>;
@@ -46,12 +46,9 @@ return { schemaVersion: 1, settings: cleanSettings(null), cache: { schemaVersion
     if (!validResult(value) || value.url !== url) {
 throw new Error('Invalid SEO Audit cache. Existing data was not overwritten.');
 }
-    // Version 1 caches may still contain the retired optional response field.
-    const result = { ...value };
-    Reflect.deleteProperty(result, 'contentType');
-    latest[url] = result;
+    latest[url] = value;
   }
-  return { schemaVersion: 1, settings: cleanSettings(raw.settings), cache: { schemaVersion: 1, latest } };
+  return { schemaVersion: 1, settings: cleanSettings(raw.settings), cache: { schemaVersion: 2, latest } };
 }
 
 /** Serialize saves so a slower older write cannot replace newer data. */

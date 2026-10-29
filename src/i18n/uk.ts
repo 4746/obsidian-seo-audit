@@ -19,7 +19,7 @@ export const uk: Record<Message, string> = {
   select: 'Вибрати сторінку', selectPage: 'Вибрати видимі рядки', previous: 'Назад', next: 'Далі', page: 'Сторінка',
   of: 'з', pages: 'сторінок', value: 'Оригінальне значення', length: 'Символів',
   error: 'Помилка', noDetails: 'Виберіть рядок для перегляду всіх метаданих.',
-  idle: 'Готово', running: 'Сканування', completed: 'завершено', active: 'активних',
+  running: 'Сканування', scannedPages: 'Перевірено',
   settings: 'Налаштування SEO Audit', property: 'URL-властивість frontmatter',
   propertyHelp: 'Властивість верхнього рівня YAML з HTTP(S) URL або списком URL. Типово: url.',
   concurrency: 'Паралельні запити', concurrencyHelp: 'Максимальна кількість одночасних HTTP-запитів (1–20). Типово: 3.',

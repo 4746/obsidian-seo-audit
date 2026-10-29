@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { Notice, setTooltip } from 'obsidian';
 import type { AuditController } from './audit-controller';
 import type { Translator } from '../i18n';
 import { button, el, fileLinks } from './dom';
@@ -22,7 +22,7 @@ return result.metadata?.fields[column as FieldKey].map(v => v.value).join(' · '
   switch (column) {
     case 'h1Count': return result.metadata?.h1Count ?? null;
     case 'h1': return result.metadata?.h1.map(v => v.value).join(' · ') ?? null;
-    case 'alternates': return result.metadata?.alternates.map(v => `${v.hreflang.value}: ${v.href.value}`).join(' · ') ?? null;
+    case 'alternates': return result.metadata ? Object.keys(result.metadata.alternates).join(', ') : null;
     case 'xRobotsTag': return result.xRobotsTag.map(v => v.value).join(' · ');
     case 'error': return result.error ? `${result.error.kind}: ${result.error.message}` : null;
     default: return result[column as 'status' | 'responseTimeMs' | 'scannedAt' | 'finalUrl'];
@@ -54,7 +54,8 @@ return false;
 return false;
 }
     }
-    return !search || columns.some(c => String(columnValue(page, r, c) ?? '').toLocaleLowerCase().includes(search));
+    return !search || columns.some(c => String(columnValue(page, r, c) ?? '').toLocaleLowerCase().includes(search))
+      || Object.values(r?.metadata?.alternates ?? {}).flat().some(href => href.toLocaleLowerCase().includes(search));
   }).sort((a, b) => {
     const av = columnValue(a, latest[a.url], filter.sort);
     const bv = columnValue(b, latest[b.url], filter.sort);
@@ -190,6 +191,15 @@ fileLinks(cell, page, t, actions.openFile);
         copy.classList.add('seo-audit-copy');
         copy.setAttribute('aria-label', t('copyUrl'));
         copy.addEventListener('click', event => event.stopPropagation());
+      } else if (column === 'alternates' && result?.metadata && Object.keys(result.metadata.alternates).length > 0) {
+        for (const [index, [language, hrefs]] of Object.entries(result.metadata.alternates).entries()) {
+          if (index > 0) {
+            cell.append(', ');
+          }
+          const code = el(cell, 'span', language, 'seo-audit-language-code');
+          code.tabIndex = 0;
+          setTooltip(code, Array.isArray(hrefs) ? hrefs.join('\n') : hrefs);
+        }
       } else {
         const text = column === 'scannedAt' && value ? new Date(String(value)).toLocaleString() : value === null || value === '' ? t(result ? 'missing' : 'unscanned') : String(value);
         cell.textContent = text;

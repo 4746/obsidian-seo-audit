@@ -100,13 +100,15 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
   const headings = section('h1', `${t('h1')} (${r.metadata?.h1Count ?? 0})`);
   renderValues(headings, t('h1'), r.metadata?.h1 ?? [], t);
   const alternates = section('alternates', t('alternates'));
-  if (!r.metadata?.alternates.length) {
+  if (!r.metadata || Object.keys(r.metadata.alternates).length === 0) {
     el(alternates, 'p', t('missing'), 'seo-audit-missing');
   } else {
-    for (const alt of r.metadata.alternates) {
+    for (const [language, hrefs] of Object.entries(r.metadata.alternates)) {
       const entry = el(alternates, 'div', undefined, 'seo-audit-alternate');
-      renderValues(entry, 'hreflang', [alt.hreflang], t);
-      renderValues(entry, 'href', [alt.href], t);
+      el(entry, 'h4', language);
+      for (const href of Array.isArray(hrefs) ? hrefs : [hrefs]) {
+        el(entry, 'div', href, 'seo-audit-original');
+      }
     }
   }
 }

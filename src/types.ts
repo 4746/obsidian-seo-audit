@@ -1,10 +1,10 @@
 export interface FieldValue { value: string; length: number }
 export const fieldKeys = ['title', 'description', 'canonical', 'robots', 'og:title', 'og:description', 'og:image', 'twitter:title', 'twitter:description', 'twitter:image'] as const;
 export type FieldKey = typeof fieldKeys[number];
-export interface Alternate { hreflang: FieldValue; href: FieldValue }
+export type AlternateLinks = Record<string, string | string[]>;
 export interface SeoMetadata {
   fields: Record<FieldKey, FieldValue[]>;
-  alternates: Alternate[];
+  alternates: AlternateLinks;
   h1: FieldValue[];
   h1Count: number;
 }
@@ -30,6 +30,6 @@ export interface AuditSettings {
 export interface PluginData {
   schemaVersion: 1;
   settings: AuditSettings;
-  cache: { schemaVersion: 1; latest: Record<string, AuditResult> };
+  cache: { schemaVersion: 2; latest: Record<string, AuditResult> };
 }
 export interface ScanProgress { running: boolean; total: number; completed: number; active: number }

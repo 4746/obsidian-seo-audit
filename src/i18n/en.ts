@@ -17,7 +17,7 @@ export const en = {
   select: 'Select page', selectPage: 'Select visible page', previous: 'Previous', next: 'Next', page: 'Page',
   of: 'of', pages: 'pages', value: 'Original value', length: 'Characters',
   error: 'Error', noDetails: 'Select a row to inspect all metadata.',
-  idle: 'Ready', running: 'Scanning', completed: 'completed', active: 'active',
+  running: 'Scanning', scannedPages: 'Scanned',
   settings: 'SEO Audit settings', property: 'Frontmatter URL property',
   propertyHelp: 'Top-level YAML property containing an HTTP(S) URL or a list of URLs. Default: url.',
   concurrency: 'Parallel requests', concurrencyHelp: 'Maximum concurrent HTTP requests (1–20). Default: 3.',
