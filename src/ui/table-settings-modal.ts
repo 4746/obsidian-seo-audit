@@ -1,9 +1,10 @@
 import { Modal, type App } from 'obsidian';
 import type { AuditController } from './audit-controller';
 import { columns, columnLabel } from './audit-table';
-import { el } from './dom';
+import { el, select } from './dom';
+import { pageSizes } from '../settings/settings';
 
-/** Applies column choices immediately using the existing settings storage. */
+/** Applies table preferences immediately using the existing settings storage. */
 export class TableSettingsModal extends Modal {
   private locale = '';
   private unsubscribe: (() => void) | null = null;
@@ -27,6 +28,16 @@ this.render();
     this.contentEl.classList.add('seo-audit');
     this.setTitle(t('tableSettings'));
     this.contentEl.replaceChildren();
+    const pagination = el(this.contentEl, 'div', undefined, 'seo-audit-table-preferences');
+    select(pagination, t('pageSize'), pageSizes.map(size => [String(size), String(size)]), String(this.plugin.data.settings.pageSize), value => {
+      const size = Number(value);
+      if (!pageSizes.includes(size)) {
+        return;
+      }
+      this.plugin.data.settings.pageSize = size;
+      this.plugin.scheduleSave();
+      this.renderTable();
+    });
     el(this.contentEl, 'h3', t('columns'));
     const choices = el(this.contentEl, 'ul', undefined, 'seo-audit-column-choices');
     for (const column of columns.filter(column => column !== 'url')) {

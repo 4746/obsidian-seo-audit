@@ -7,6 +7,14 @@ import type { AuditResult, PluginData } from '../src/types';
 
 const result: AuditResult = { url: 'https://a.test', finalUrl: null, scannedAt: '2026-10-29T00:00:00Z', status: 200, responseTimeMs: 42, xRobotsTag: [], error: null, metadata: parseHtml('<title>=HYPERLINK("bad")</title><meta name="description" content="one"><meta name="description" content="two">') };
 describe('storage', () => {
+  it('validates page size against the supported choices', () => {
+    for (const pageSize of [25, 50, 100, 200, 500]) {
+      expect(cleanSettings({ pageSize }).pageSize).toBe(pageSize);
+    }
+    for (const pageSize of [undefined, null, 0, -1, 75, 1000, Infinity, '100']) {
+      expect(cleanSettings({ pageSize }).pageSize).toBe(50);
+    }
+  });
   it('separates settings/cache and validates versions/lengths without overwriting', () => {
     const data = loadData(null); data.cache.latest[result.url] = result;
     expect(loadData(JSON.parse(JSON.stringify(data)))).toEqual(data);

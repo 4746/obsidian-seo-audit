@@ -258,3 +258,25 @@ it('shows comma-separated language codes with URL tooltips and keeps alternate U
   await s.detailsView.onClose();
   await s.view.onClose();
 });
+
+it('applies and saves page size choices from table settings and resets pagination', async () => {
+  const s = await setup(120);
+  s.view.contentEl.querySelector('.seo-audit-pagination')!.querySelectorAll('button')[1]!.click();
+  expect(s.view.contentEl.querySelector('.seo-audit-pagination')!.textContent).toContain('Page 2 of 3');
+  menuFor(s.view).items.find(item => item.title === 'Settings')!.action();
+  const size = document.querySelector<HTMLSelectElement>('select[aria-label="Rows per page"]')!;
+  expect(size.value).toBe('50');
+  expect(Array.from(size.options).map(option => option.value)).toEqual(['25', '50', '100', '200', '500']);
+  for (const value of [25, 50, 100, 200, 500]) {
+    size.value = String(value); size.dispatchEvent(new Event('change'));
+    expect(s.data.settings.pageSize).toBe(value);
+    expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(Math.min(value, 120));
+    for (const nav of s.view.contentEl.querySelectorAll('.seo-audit-pagination')) {
+      expect(nav.textContent).toContain(`Page 1 of ${Math.ceil(120 / value)}`);
+    }
+  }
+  expect(s.scheduleSave).toHaveBeenCalledTimes(5);
+  expect(loadData(JSON.parse(JSON.stringify(s.data))).settings.pageSize).toBe(500);
+  await s.view.onClose();
+  await s.detailsView.onClose();
+});

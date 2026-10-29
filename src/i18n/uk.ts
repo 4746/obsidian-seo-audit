@@ -1,6 +1,7 @@
 import type { Message } from './en';
 
 export const uk: Record<Message, string> = {
+  pageSize: 'Записів на сторінці',
   scanPage: 'Перевірити сторінку', refreshPage: 'Оновити дані сторінки', scanBusy: 'Триває перевірка',
   unscannedHelp: 'Натисніть кнопку перевірки вгорі, щоб отримати SEO-дані цієї сторінки.',
   scanBusyHelp: 'Дочекайтеся завершення поточної перевірки, щоб розпочати нову.',

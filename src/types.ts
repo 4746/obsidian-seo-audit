@@ -26,6 +26,7 @@ export interface AuditSettings {
   timeoutMs: number;
   language: 'auto' | 'en' | 'uk';
   visibleColumns: string[];
+  pageSize: number;
 }
 export interface PluginData {
   schemaVersion: 1;

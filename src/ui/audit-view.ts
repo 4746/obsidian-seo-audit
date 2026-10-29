@@ -149,6 +149,10 @@ void this.app.workspace.getLeaf(true).openFile(file);
 }
   };
   private renderTable(force = true): void {
+    if (this.tableState.pageSize !== this.plugin.data.settings.pageSize) {
+      this.tableState.pageSize = this.plugin.data.settings.pageSize;
+      this.tableState.page = 0;
+    }
     const pages = this.plugin.index.pages();
     const results = pages.map(page => this.plugin.data.cache.latest[page.url]);
     const signature = JSON.stringify([pages, this.plugin.data.settings.urlProperty, this.plugin.data.settings.visibleColumns, this.tableState.filter, this.tableState.page, this.tableState.pageSize, [...this.tableState.selected], this.tableState.focused]);
