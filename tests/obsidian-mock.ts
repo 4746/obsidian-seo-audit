@@ -3,7 +3,7 @@ export class ItemView {
   contentEl = Object.assign(document.createElement('div'), { addClass: (...names: string[]) => this.contentEl.classList.add(...names) });
   onPaneMenu(): void {}
   app: unknown;
-  constructor(leaf: { app: unknown }) { this.app = leaf.app; }
+  constructor(public leaf: { app: unknown; detach?: () => void }) { this.app = leaf.app; }
 }
 export class Notice { constructor(public text: string) {} }
 export class TFile {
@@ -32,3 +32,5 @@ export class Modal {
   open() { document.body.appendChild(this.contentEl); this.onOpen(); }
   close() { this.onClose(); this.contentEl.remove(); }
 }
+
+export function setIcon(element: HTMLElement, icon: string): void { element.dataset.icon = icon; }

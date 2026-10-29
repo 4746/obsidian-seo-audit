@@ -1,6 +1,8 @@
 import type { Message } from './en';
 
 export const uk: Record<Message, string> = {
+  httpResponse: 'Відповідь сервера', basicSeo: 'Основне SEO', openGraph: 'Open Graph', twitterCards: 'Twitter Cards',
+  detailsFailed: 'Не вдалося відкрити деталі сторінки',
   pluginName: 'SEO Audit', english: 'English', ukrainian: 'Українська',
   open: 'Відкрити SEO Audit', all: 'Перевірити всі', selected: 'Перевірити вибрані', stop: 'Зупинити', search: 'Пошук за URL, файлами та метаданими…',
   status: 'HTTP-статус', any: 'Усі', unscanned: 'Не перевірено', errors: 'Помилки', present: 'Є значення', missing: 'Відсутнє',
@@ -12,7 +14,7 @@ export const uk: Record<Message, string> = {
   empty: 'Відповідних сторінок немає. Додайте HTTP(S) URL у налаштовану властивість frontmatter.',
   unknown: 'Недоступно', never: 'Ніколи', details: 'Деталі сторінки', close: 'Закрити деталі',
   select: 'Вибрати сторінку', selectPage: 'Вибрати видимі рядки', previous: 'Назад', next: 'Далі', page: 'Сторінка',
-  of: 'з', pages: 'сторінок', value: 'Оригінальне значення', length: 'Довжина (Unicode code points)',
+  of: 'з', pages: 'сторінок', value: 'Оригінальне значення', length: 'Символів',
   error: 'Помилка', contentType: 'Тип вмісту', noDetails: 'Виберіть рядок для перегляду всіх метаданих.',
   idle: 'Готово', running: 'Сканування', completed: 'завершено', active: 'активних',
   settings: 'Налаштування SEO Audit', property: 'URL-властивість frontmatter',

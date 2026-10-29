@@ -145,7 +145,7 @@ state.selected.delete(p.url);
   const body = el(table, 'tbody');
   for (const page of visiblePages) {
     const result = controller.data.cache.latest[page.url];
-    const row = el(body, 'tr'); row.tabIndex = 0; row.setAttribute('aria-label', `${t('details')}: ${page.url}`);
+    const row = el(body, 'tr'); row.tabIndex = 0;
     if (state.focused === page.url) {
 row.classList.add('is-selected');
 }

@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { Menu, type WorkspaceLeaf } from 'obsidian';
 import { Menu as MockMenu } from './obsidian-mock';
 import { AuditView } from '../src/ui/audit-view';
+import { AuditDetailsView } from '../src/ui/audit-details-view';
 import { loadData } from '../src/storage/audit-storage';
 import { UrlIndex } from '../src/indexer/url-indexer';
 import { translator } from '../src/i18n';
@@ -19,11 +20,16 @@ async function setup(count = 2) {
   index.update('duplicate.md', 'https://page0.test');
   const scan = vi.fn(); const scheduleSave = vi.fn(); const openLinkText = vi.fn(); const openFile = vi.fn();
   const getFileByPath = vi.fn((path: string) => ({ path }));
-  const plugin = { data, index, scan, scheduleSave, t: translator('en', 'en'), scanner: { progress: { running: false, total: 0, active: 0, completed: 0 }, stop: vi.fn() },
+  const openDetails = vi.fn((url: string) => { detailsView.setPage(url); document.body.appendChild(detailsView.contentEl); });
+  const plugin = { data, index, scan, scheduleSave, openDetails, t: translator('en', 'en'), scanner: { progress: { running: false, total: 0, active: 0, completed: 0 }, stop: vi.fn() },
     subscribe: (callback: () => void) => { listeners.add(callback); return () => { listeners.delete(callback); }; }, reindex: vi.fn() };
-  const view = new AuditView({ app: { vault: { getFileByPath }, workspace: { openLinkText, getLeaf: () => ({ openFile }) } } } as unknown as WorkspaceLeaf, plugin);
+  const detach = vi.fn();
+  const leaf = { app: { vault: { getFileByPath }, workspace: { openLinkText, getLeaf: () => ({ openFile }) } }, detach } as unknown as WorkspaceLeaf;
+  const detailsView = new AuditDetailsView(leaf, plugin);
+  await detailsView.onOpen();
+  const view = new AuditView(leaf, plugin);
   await view.onOpen(); document.body.appendChild(view.contentEl);
-  return { view, plugin, data, scan, scheduleSave, openLinkText, openFile, getFileByPath, notify: () => { for (const listener of listeners) listener(); } };
+  return { view, detailsView, detach, plugin, data, scan, scheduleSave, openLinkText, openFile, getFileByPath, notify: () => { for (const listener of listeners) listener(); } };
 }
 it('paginates large indices and scans all/selected unique URLs', async () => {
   const s = await setup(120);
@@ -40,10 +46,10 @@ it('renders details as safe text with duplicates, all H1/alternates and lengths;
   s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 404, responseTimeMs: 45, xRobotsTag: [{ value: 'noindex', length: 7 }], contentType: 'text/html', error: { kind: 'http', message: 'HTTP 404' }, metadata: parseHtml('<title>&lt;img onerror=bad()&gt;</title><meta name="description" content="one"><meta name="description" content="two"><h1>First 😀</h1><h1>Second</h1><link rel="alternate" hreflang="x-default" href="/">') };
   vi.useFakeTimers(); s.notify(); await vi.advanceTimersByTimeAsync(151);
   s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!.click();
-  const detail = s.view.contentEl.querySelector('.seo-audit-details')!;
+  const detail = document.querySelector('.seo-audit-details')!;
   expect(detail.textContent).toContain('First 😀'); expect(detail.textContent).toContain('Second');
   expect(detail.textContent).toContain('x-default'); expect(detail.textContent).toContain('one'); expect(detail.textContent).toContain('two');
-  expect(detail.textContent).toContain('Length (code points)'); expect(detail.querySelector('img')).toBeNull();
+  expect(detail.textContent).toContain('Characters'); expect(detail.querySelector('img')).toBeNull();
   expect(detail.querySelectorAll('.seo-audit-file')).toHaveLength(2);
   detail.querySelector<HTMLAnchorElement>('.seo-audit-file')!.click(); expect(s.openFile).toHaveBeenCalledWith({ path: '0.md' });
   expect(s.view.contentEl.querySelector('.seo-audit-error-row')).not.toBeNull();
@@ -68,7 +74,7 @@ it('opens literal filenames containing # and skips sources deleted since renderi
   const s = await setup();
   s.plugin.index.update('SEO #1.md', 'https://page0.test');
   s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!.click();
-  const source = Array.from(s.view.contentEl.querySelectorAll<HTMLAnchorElement>('.seo-audit-details .seo-audit-file')).find(a => a.textContent === 'SEO #1.md')!;
+  const source = Array.from(document.querySelectorAll<HTMLAnchorElement>('.seo-audit-details .seo-audit-file')).find(a => a.textContent === 'SEO #1.md')!;
   source.click();
   expect(s.openFile).toHaveBeenCalledWith({ path: 'SEO #1.md' });
   s.getFileByPath.mockReturnValueOnce(null as unknown as { path: string });
@@ -107,11 +113,11 @@ it('keeps URL visible, copies it without selecting a row and preserves rows on d
   expect(table!.querySelector('thead')!.textContent).toContain('published');
   row.querySelector<HTMLButtonElement>('.seo-audit-copy')!.click();
   expect(writeText).toHaveBeenCalledWith('https://page0.test');
-  expect(s.view.contentEl.querySelector('.seo-audit-details')!.textContent).toContain('Select a row');
+  expect(document.querySelector('.seo-audit-details')).toBeNull();
   row.click();
   expect(s.view.contentEl.querySelector('table')).toBe(table);
   expect(row.classList.contains('is-selected')).toBe(true);
-  expect(s.view.contentEl.querySelector('.seo-audit-details')!.textContent).toContain('Not scanned');
+  expect(document.querySelector('.seo-audit-details')!.textContent).toContain('Not scanned');
   menuFor(s.view).items.find(item => item.title === 'Settings')!.action();
   expect(Array.from(document.querySelectorAll('.seo-audit-column-choices label')).map(label => label.textContent)).not.toContain('URL');
   await s.view.onClose();
@@ -151,7 +157,49 @@ it('preserves native horizontal scrolling through progress and result updates', 
 
 it('does not create hover tooltips in the audit table', async () => {
   const s = await setup();
+  expect(s.view.contentEl.querySelector('.seo-audit-table tbody tr[aria-label]')).toBeNull();
   expect(s.view.contentEl.querySelector('.seo-audit-table [title], .seo-audit-table [data-tooltip]')).toBeNull();
   expect(s.view.contentEl.querySelector('.seo-audit-copy')!.getAttribute('aria-label')).toBe('Copy URL');
+  await s.view.onClose();
+});
+
+it('opens details outside the table and reuses the sidebar for another row', async () => {
+  const s = await setup();
+  const rows = s.view.contentEl.querySelectorAll<HTMLTableRowElement>('tbody tr');
+  rows[0]!.click();
+  expect(s.plugin.openDetails).toHaveBeenLastCalledWith('https://page0.test');
+  expect(s.view.contentEl.querySelector('.seo-audit-details')).toBeNull();
+  rows[1]!.click();
+  expect(document.querySelectorAll('.seo-audit-details')).toHaveLength(1);
+  expect(s.detailsView.contentEl.textContent).toContain('https://page1.test');
+  s.detailsView.contentEl.querySelector('button')!.click();
+  expect(s.detach).toHaveBeenCalledOnce();
+  await s.detailsView.onClose();
+  await s.view.onClose();
+});
+
+it('keeps accordion choices across result updates and uses an icon to close details', async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], contentType: 'text/html', error: null, metadata: parseHtml('<title>Hello 😀</title>') };
+  s.detailsView.setPage('https://page0.test');
+  const host = s.detailsView.contentEl;
+  const close = host.querySelector<HTMLButtonElement>('.seo-audit-detail-close')!;
+  expect(close.textContent).toBe('');
+  expect(close.getAttribute('aria-label')).toBe('Close details');
+  expect(close.dataset.icon).toBe('x');
+  expect(host.querySelectorAll('details')).toHaveLength(6);
+  expect(host.textContent).toContain('Characters: 7');
+  expect(host.textContent).not.toContain('code points');
+  host.querySelector<HTMLDetailsElement>('[data-section="seo"]')!.open = false;
+  host.querySelector<HTMLDetailsElement>('[data-section="og"]')!.open = true;
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(host.querySelector<HTMLDetailsElement>('[data-section="seo"]')!.open).toBe(false);
+  expect(host.querySelector<HTMLDetailsElement>('[data-section="og"]')!.open).toBe(true);
+  s.detailsView.setPage('https://page1.test');
+  s.detailsView.setPage('https://page0.test');
+  expect(host.querySelector<HTMLDetailsElement>('[data-section="seo"]')!.open).toBe(true);
+  expect(host.querySelector<HTMLDetailsElement>('[data-section="og"]')!.open).toBe(false);
+  await s.detailsView.onClose();
   await s.view.onClose();
 });

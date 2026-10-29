@@ -6,6 +6,7 @@ import { ScanQueue } from './scanner/scan-manager';
 import { AuditStorage, loadData } from './storage/audit-storage';
 import { AuditSettingTab } from './settings/settings-tab';
 import { AuditView, VIEW_TYPE } from './ui/audit-view';
+import { AuditDetailsView, DETAILS_VIEW_TYPE } from './ui/audit-details-view';
 import type { PluginData } from './types';
 
 export default class SeoAuditPlugin extends Plugin {
@@ -15,6 +16,7 @@ export default class SeoAuditPlugin extends Plugin {
   private storage!: AuditStorage;
   private listeners = new Set<() => void>();
   private disposed = false;
+  private detailsQueue: Promise<void> = Promise.resolve();
   get t(): Translator {
  return translator(this.data?.settings.language ?? 'auto', getLanguage()); 
 }
@@ -38,6 +40,7 @@ return;
       this.data.cache.latest[result.url] = result; this.scheduleSave();
     }, () => this.notify());
     this.registerView(VIEW_TYPE, leaf => new AuditView(leaf, this));
+    this.registerView(DETAILS_VIEW_TYPE, leaf => new AuditDetailsView(leaf, this));
     this.addRibbonIcon('search-check', this.t('open'), () => {
  void this.activateView(); 
 });
@@ -81,6 +84,29 @@ void this.storage.flush();
       await leaf.setViewState({ type: VIEW_TYPE, active: true });
     }
     await this.app.workspace.revealLeaf(leaf);
+  }
+  /** Serialize opening so rapid row clicks reuse a single sidebar tab. */
+  openDetails(url: string): void {
+    this.detailsQueue = this.detailsQueue.then(async () => {
+      if (this.disposed) {
+        return;
+      }
+      let leaf = this.app.workspace.getLeavesOfType(DETAILS_VIEW_TYPE)[0];
+      if (!leaf) {
+        leaf = this.app.workspace.getRightLeaf(true) ?? undefined;
+        if (!leaf) {
+          return;
+        }
+        await leaf.setViewState({ type: DETAILS_VIEW_TYPE, active: true });
+      }
+      await this.app.workspace.revealLeaf(leaf);
+      if (leaf.view instanceof AuditDetailsView) {
+        leaf.view.setPage(url);
+      }
+    }).catch(error => {
+      console.error('SEO Audit details', error);
+      new Notice(this.t('detailsFailed'));
+    });
   }
   onunload(): void {
     this.disposed = true; this.scanner?.stop(); this.index?.dispose();

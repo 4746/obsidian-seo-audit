@@ -11,4 +11,5 @@ export interface AuditController {
   scan(urls: string[]): void;
   reindex(): Promise<void>;
   scheduleSave(): void;
+  openDetails(url: string): void;
 }

@@ -1,7 +1,6 @@
 import { ItemView, Notice, type Menu, type WorkspaceLeaf } from 'obsidian';
 import type { AuditController } from './audit-controller';
 import { renderAuditTable, type AuditTableState, type TableFilter } from './audit-table';
-import { renderAuditDetails } from './audit-details';
 import { TableSettingsModal } from './table-settings-modal';
 import { fieldKeys } from '../types';
 import { download, exportCsv, exportJson } from '../export/export-service';
@@ -15,7 +14,6 @@ export class AuditView extends ItemView {
     filter: { search: '', status: 'any', field: 'title', presence: 'any', sort: 'url', descending: false },
   };
   private tableHost!: HTMLElement;
-  private detailHost!: HTMLElement;
   private progressHost!: HTMLElement;
   private settingsModal: TableSettingsModal | null = null;
   private unsubscribe: (() => void) | null = null;
@@ -115,7 +113,6 @@ this.refresh();
 }).setAttribute('aria-label', t('metadataFilter'));
     this.progressHost = el(this.contentEl, 'div', undefined, 'seo-audit-progress'); this.progressHost.setAttribute('role', 'status'); this.progressHost.setAttribute('aria-live', 'polite');
     this.tableHost = el(this.contentEl, 'div');
-    this.detailHost = el(this.contentEl, 'section', undefined, 'seo-audit-details');
     this.refresh();
   }
   private refresh(): void {
@@ -143,7 +140,7 @@ options.push([this.tableState.filter.status, this.tableState.filter.status]);
     this.progressHost.replaceChildren();
     el(this.progressHost, 'span', `${t(p.running ? 'running' : 'idle')} · ${p.completed}/${p.total} ${t('completed')} · ${p.active} ${t('active')} · ${this.tableState.selected.size} ${t('selectedCount')}`);
     const progress = el(this.progressHost, 'progress'); progress.max = p.total || 1; progress.value = p.completed;
-    this.renderTable(false); this.renderDetails();
+    this.renderTable(false);
   }
   private openFile = (path: string): void => {
     const file = this.app.vault.getFileByPath(path);
@@ -160,15 +157,14 @@ void this.app.workspace.getLeaf(true).openFile(file);
       return;
     }
     renderAuditTable(this.tableHost, this.plugin, this.tableState, {
-      render: () => this.renderTable(), details: () => this.renderDetails(),
+      render: () => this.renderTable(), details: () => {
+        if (this.tableState.focused) {
+          this.plugin.openDetails(this.tableState.focused);
+        }
+      },
       refresh: () => this.refresh(), openFile: this.openFile,
     });
     this.tableSignature = signature;
     this.tableResults = results;
-  }
-  private renderDetails(): void {
-    renderAuditDetails(this.detailHost, this.plugin, this.tableState.focused, this.openFile, () => {
-      this.tableState.focused = null; this.renderTable(); this.renderDetails();
-    });
   }
 }

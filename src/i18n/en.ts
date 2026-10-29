@@ -1,4 +1,6 @@
 export const en = {
+  httpResponse: 'HTTP response', basicSeo: 'Basic SEO', openGraph: 'Open Graph', twitterCards: 'Twitter Cards',
+  detailsFailed: 'Could not open page details',
   pluginName: 'SEO Audit', english: 'English', ukrainian: 'Українська',
   open: 'Open SEO Audit', all: 'Scan all', selected: 'Scan selected', stop: 'Stop', search: 'Search URLs, files and metadata…',
   status: 'HTTP status', any: 'All', unscanned: 'Not scanned', errors: 'Errors', present: 'Present', missing: 'Missing',
@@ -10,7 +12,7 @@ export const en = {
   empty: 'No matching pages. Add an HTTP(S) URL to the configured frontmatter property.',
   unknown: 'Unavailable', never: 'Never', details: 'Page details', close: 'Close details',
   select: 'Select page', selectPage: 'Select visible page', previous: 'Previous', next: 'Next', page: 'Page',
-  of: 'of', pages: 'pages', value: 'Original value', length: 'Length (code points)',
+  of: 'of', pages: 'pages', value: 'Original value', length: 'Characters',
   error: 'Error', contentType: 'Content type', noDetails: 'Select a row to inspect all metadata.',
   idle: 'Ready', running: 'Scanning', completed: 'completed', active: 'active',
   settings: 'SEO Audit settings', property: 'Frontmatter URL property',
