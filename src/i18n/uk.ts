@@ -1,6 +1,7 @@
 import type { Message } from './en';
 
 export const uk: Record<Message, string> = {
+  pluginName: 'SEO Audit', english: 'English', ukrainian: 'Українська',
   open: 'Відкрити SEO Audit', all: 'Перевірити всі', selected: 'Перевірити вибрані', stop: 'Зупинити', search: 'Пошук за URL, файлами та метаданими…',
   status: 'HTTP-статус', any: 'Усі', unscanned: 'Не перевірено', errors: 'Помилки', present: 'Є значення', missing: 'Відсутнє',
   metadataFilter: 'Фільтр метаданих', columns: 'Стовпці', exportJson: 'Експорт JSON', exportCsv: 'Експорт CSV',

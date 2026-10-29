@@ -1,11 +1,10 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import type { WorkspaceLeaf } from 'obsidian';
-import type SeoAuditPlugin from '../src/main';
-import { AuditView } from '../src/view';
-import { loadData } from '../src/storage';
-import { UrlIndex } from '../src/indexer';
+import { AuditView } from '../src/ui/audit-view';
+import { loadData } from '../src/storage/audit-storage';
+import { UrlIndex } from '../src/indexer/url-indexer';
 import { translator } from '../src/i18n';
-import { parseHtml } from '../src/parser';
+import { parseHtml } from '../src/parser/html-parser';
 
 afterEach(() => { vi.useRealTimers(); document.body.replaceChildren(); });
 async function setup(count = 2) {
@@ -17,7 +16,7 @@ async function setup(count = 2) {
   const getFileByPath = vi.fn((path: string) => ({ path }));
   const plugin = { data, index, scan, scheduleSave, t: translator('en', 'en'), scanner: { progress: { running: false, total: 0, active: 0, completed: 0 }, stop: vi.fn() },
     subscribe: (callback: () => void) => { listener = callback; return () => { listener = () => undefined; }; }, reindex: vi.fn() };
-  const view = new AuditView({ app: { vault: { getFileByPath }, workspace: { openLinkText, getLeaf: () => ({ openFile }) } } } as unknown as WorkspaceLeaf, plugin as unknown as SeoAuditPlugin);
+  const view = new AuditView({ app: { vault: { getFileByPath }, workspace: { openLinkText, getLeaf: () => ({ openFile }) } } } as unknown as WorkspaceLeaf, plugin);
   await view.onOpen(); document.body.appendChild(view.contentEl);
   return { view, plugin, data, scan, scheduleSave, openLinkText, openFile, getFileByPath, notify: () => listener() };
 }

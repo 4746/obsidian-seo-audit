@@ -5,3 +5,7 @@ export class ItemView {
   constructor(leaf: { app: unknown }) { this.app = leaf.app; }
 }
 export class Notice { constructor(public text: string) {} }
+export class TFile {
+  extension = 'md';
+  constructor(public path: string) {}
+}

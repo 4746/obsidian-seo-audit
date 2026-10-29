@@ -1,24 +1,10 @@
-import { fieldKeys, type AuditResult, type AuditSettings, type PluginData } from './types';
+import { fieldKeys, type AuditResult, type PluginData } from '../types';
+import { cleanSettings } from '../settings/settings';
+import { codePointLength } from '../utils/string-length';
 
-export const defaultSettings: AuditSettings = {
-  urlProperty: 'url', concurrency: 3, timeoutMs: 30000, language: 'auto',
-  visibleColumns: ['url', 'files', 'status', 'title', 'description', 'canonical', 'h1Count', 'responseTimeMs', 'scannedAt'],
-};
 const object = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
-const bounded = (value: unknown, fallback: number, min: number, max: number): number => typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback;
-export function cleanSettings(raw: unknown): AuditSettings {
-  const s = object(raw) ? raw : {};
-  return {
-    urlProperty: typeof s.urlProperty === 'string' && s.urlProperty.trim() ? s.urlProperty.trim() : 'url',
-    concurrency: bounded(s.concurrency, 3, 1, 20),
-    timeoutMs: bounded(s.timeoutMs, 30000, 1000, 300000),
-    language: s.language === 'en' || s.language === 'uk' ? s.language : 'auto',
-    visibleColumns: Array.isArray(s.visibleColumns) && s.visibleColumns.every(x => typeof x === 'string') ? s.visibleColumns : [...defaultSettings.visibleColumns],
-  };
-}
-
 function validValues(value: unknown): boolean {
-  return Array.isArray(value) && value.every(v => object(v) && typeof v.value === 'string' && typeof v.length === 'number' && v.length === Array.from(v.value).length);
+  return Array.isArray(value) && value.every(v => object(v) && typeof v.value === 'string' && typeof v.length === 'number' && v.length === codePointLength(v.value));
 }
 export function validResult(v: unknown): v is AuditResult {
   if (!object(v) || typeof v.url !== 'string' || typeof v.scannedAt !== 'string' || !Number.isFinite(Date.parse(v.scannedAt))) return false;
@@ -58,4 +44,27 @@ export class SaveQueue {
     this.pending = next;
     return next;
   }
+}
+
+/** Coalesces cache/settings updates and owns the persistence lifecycle. */
+export class AuditStorage {
+  private saves: SaveQueue;
+  private timer: number | undefined;
+  private dirty = false;
+  private disposed = false;
+  constructor(readonly data: PluginData, write: (data: PluginData) => Promise<void>, private onError: (error: unknown) => void) {
+    this.saves = new SaveQueue(write);
+  }
+  scheduleSave(): void {
+    this.dirty = true;
+    if (this.timer !== undefined || this.disposed) return;
+    this.timer = window.setTimeout(() => { this.timer = undefined; void this.flush(); }, 1500);
+  }
+  async flush(): Promise<void> {
+    if (!this.dirty) return;
+    this.dirty = false;
+    try { await this.saves.save(this.data); }
+    catch (error) { this.dirty = true; this.onError(error); }
+  }
+  dispose(): void { this.disposed = true; window.clearTimeout(this.timer); void this.flush(); }
 }

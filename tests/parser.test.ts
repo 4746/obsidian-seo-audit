@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { codePointLength, parseHtml } from '../src/parser';
+import { parseHtml } from '../src/parser/html-parser';
+import { codePointLength } from '../src/utils/string-length';
 
 describe('code point length', () => {
   it.each([['', 0], ['SEO', 3], ['Україна', 7], ['😀𐐀', 2], ['e\u0301', 2], ['👩‍💻', 3]])('counts %s as %i', (s, n) => expect(codePointLength(s)).toBe(n));

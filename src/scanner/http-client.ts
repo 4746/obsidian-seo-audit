@@ -1,5 +1,11 @@
-import { fieldValue, parseHtml } from './parser';
-import type { AuditResult, AuditSettings, ScanProgress } from './types';
+import { requestUrl } from 'obsidian';
+import { fieldValue } from '../utils/string-length';
+import { parseHtml } from '../parser/html-parser';
+import type { AuditResult, AuditSettings } from '../types';
+
+export async function requestPage(url: string): Promise<HttpResponse> {
+  return await requestUrl({ url, method: 'GET', throw: false, headers: { Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.1' } });
+}
 
 export interface HttpResponse {
   status: number;
@@ -23,10 +29,10 @@ export class HttpAuditor {
       const remaining = deadline - performance.now();
       if (remaining <= 0) throw new TimedOut();
       await new Promise<void>((resolve, reject) => {
-        const cleanup = () => { clearTimeout(timer); this.waiters.delete(wake); signal.removeEventListener('abort', cancel); };
+        const cleanup = () => { window.clearTimeout(timer); this.waiters.delete(wake); signal.removeEventListener('abort', cancel); };
         const wake = () => { cleanup(); resolve(); };
         const cancel = () => { cleanup(); reject(new Cancelled()); };
-        const timer = setTimeout(() => { cleanup(); reject(new TimedOut()); }, remaining);
+        const timer = window.setTimeout(() => { cleanup(); reject(new TimedOut()); }, remaining);
         this.waiters.add(wake);
         signal.addEventListener('abort', cancel, { once: true });
         if (signal.aborted) cancel();
@@ -49,10 +55,10 @@ export class HttpAuditor {
       return result;
     }
     const started = performance.now();
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timer: number | undefined;
     let cancel: () => void = () => undefined;
     const interrupted = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new TimedOut()), settings.timeoutMs);
+      timer = window.setTimeout(() => reject(new TimedOut()), settings.timeoutMs);
       cancel = () => reject(new Cancelled());
       signal.addEventListener('abort', cancel, { once: true });
       if (signal.aborted) cancel();
@@ -92,7 +98,7 @@ export class HttpAuditor {
       result.error = error instanceof TimedOut ? { kind: 'timeout', message: `Request exceeded ${settings.timeoutMs} ms` }
         : { kind: 'network', message: error instanceof Error ? error.message : String(error) };
     } finally {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       signal.removeEventListener('abort', cancel);
       result.scannedAt = new Date().toISOString();
     }
@@ -100,35 +106,3 @@ export class HttpAuditor {
   }
 }
 
-export class ScanQueue {
-  progress: ScanProgress = { running: false, total: 0, completed: 0, active: 0 };
-  private controller: AbortController | null = null;
-  constructor(private auditor: HttpAuditor, private onResult: (result: AuditResult) => void, private onProgress: () => void) {}
-
-  stop(): void { this.controller?.abort(); }
-
-  async run(urls: string[], settings: AuditSettings): Promise<void> {
-    if (this.progress.running) return;
-    const controller = new AbortController();
-    this.controller = controller;
-    const queue = [...new Set(urls)];
-    this.progress = { running: true, total: queue.length, completed: 0, active: 0 };
-    this.onProgress();
-    let next = 0;
-    const worker = async () => {
-      while (!controller.signal.aborted && next < queue.length) {
-        const url = queue[next++]!;
-        this.progress.active++;
-        this.onProgress();
-        try {
-          const result = await this.auditor.audit(url, settings, controller.signal);
-          if (result && !controller.signal.aborted) { this.onResult(result); this.progress.completed++; }
-        } finally { this.progress.active--; this.onProgress(); }
-        // Allow painting and interaction between synchronous DOM parsing steps.
-        await new Promise(resolve => setTimeout(resolve, 0));
-      }
-    };
-    try { await Promise.all(Array.from({ length: Math.min(settings.concurrency, queue.length) }, worker)); }
-    finally { this.progress.running = false; this.controller = null; this.onProgress(); }
-  }
-}

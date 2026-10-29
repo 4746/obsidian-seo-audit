@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
-import { filterPages, type TableFilter } from '../src/table';
+import { filterPages, type TableFilter } from '../src/ui/audit-table';
 import { translator } from '../src/i18n';
-import { parseHtml } from '../src/parser';
+import { parseHtml } from '../src/parser/html-parser';
 import type { AuditResult } from '../src/types';
 const pages = [{ url: 'https://a.test', files: ['Folder/One.md', 'Two.md'] }, { url: 'https://b.test', files: ['Three.md'] }, { url: 'https://c.test', files: ['Four.md'] }];
 const result: AuditResult = { url: pages[0]!.url, finalUrl: null, status: 200, responseTimeMs: 10, scannedAt: new Date().toISOString(), contentType: 'text/html', metadata: parseHtml('<title>Unique 😀</title><meta name="description" content=""><h1>Heading</h1>'), xRobotsTag: [], error: null };

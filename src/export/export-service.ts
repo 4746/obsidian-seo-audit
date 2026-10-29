@@ -1,13 +1,20 @@
-import { fieldKeys, type AuditResult, type IndexedPage } from './types';
+import { fieldKeys, type AuditResult, type IndexedPage } from '../types';
 
 export function exportJson(pages: IndexedPage[], latest: Record<string, AuditResult>): string {
   return JSON.stringify({ schemaVersion: 1, exportedAt: new Date().toISOString(), pages: pages.map(page => ({ ...page, result: latest[page.url] ?? null })) }, null, 2);
 }
 
 /** Prevent spreadsheet execution even when a value starts with control characters. */
+function startsFormula(text: string): boolean {
+  for (const char of text) {
+    if (char.charCodeAt(0) > 31 && !/\s/u.test(char)) return /^[=+@-]$/.test(char);
+  }
+  return false;
+}
+
 function cell(value: unknown): string {
   let text = value == null ? '' : typeof value === 'string' ? value : JSON.stringify(value);
-  if (/^[\s\u0000-\u001f]*[=+@-]/.test(text) || /^[\t\r\n]/.test(text)) text = `'${text}`;
+  if (startsFormula(text) || /^[\t\r\n]/.test(text)) text = `'${text}`;
   return `"${text.replace(/"/g, '""')}"`;
 }
 
@@ -24,11 +31,11 @@ export function exportCsv(pages: IndexedPage[], latest: Record<string, AuditResu
 
 export function download(text: string, format: 'csv' | 'json'): void {
   const url = URL.createObjectURL(new Blob([text], { type: format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8' }));
-  const anchor = document.createElement('a');
+  const anchor = createEl('a');
   anchor.href = url;
   anchor.download = `seo-audit-${new Date().toISOString().replace(/[:.]/g, '-')}.${format}`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

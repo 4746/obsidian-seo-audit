@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { frontmatterUrls, UrlIndex } from '../src/indexer';
+import { frontmatterUrls, UrlIndex } from '../src/indexer/url-indexer';
 it('accepts HTTP(S) strings/lists and rejects unsupported or malformed values', () => {
   expect(frontmatterUrls([' https://a.test ', 'https://a.test', 'javascript:alert(1)', 5, null, '/relative', 'bad', 'http://b.test'])).toEqual(['https://a.test', 'http://b.test']);
 });

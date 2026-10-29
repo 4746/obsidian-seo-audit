@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { HttpAuditor, ScanQueue, type HttpResponse } from '../src/scanner';
-import { defaultSettings } from '../src/storage';
+import { HttpAuditor, type HttpResponse } from '../src/scanner/http-client';
+import { ScanQueue } from '../src/scanner/scan-manager';
+import { defaultSettings } from '../src/settings/settings';
 import type { AuditResult } from '../src/types';
 
 const response = (extra: Partial<HttpResponse> = {}): HttpResponse => ({ status: 200, headers: { 'Content-Type': 'text/html' }, text: '<title>Test 😀</title>', ...extra });
@@ -70,7 +71,8 @@ describe('scan queue', () => {
     await pending;
     expect(get).toHaveBeenCalledTimes(1);
     expect(results).toHaveLength(2);
-    expect(results[1]?.error).toMatchObject({ kind: 'timeout', message: expect.stringContaining('slot') });
+    expect(results[1]?.error?.kind).toBe('timeout');
+    expect(results[1]?.error?.message).toContain('slot');
   });
   it('limits concurrent requests, deduplicates URLs and reports completed progress', async () => {
     vi.useFakeTimers();
