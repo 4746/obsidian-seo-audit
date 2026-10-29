@@ -99,12 +99,36 @@ Keep the plugin ID stable once published. Use semantic versioning and ensure `mi
 - Read YAML frontmatter through `metadataCache`.
 - Use a configurable property name, defaulting to `url`.
 - Treat the configured frontmatter property as the source of truth for URL discovery.
-- Ignore files without a valid HTTP or HTTPS URL.
+- **Each Markdown file represents exactly one webpage URL.**
+- The URL property must contain a single string value.
+- Do not support arrays, lists or multiple URLs within the same property.
+- Ignore files where the URL property is missing, empty, not a string or does not contain a valid HTTP/HTTPS URL.
 - Maintain an index mapping URLs to their source Markdown files.
-- Deduplicate URLs while preserving references to all matching files.
+- Deduplicate identical URLs across different files while preserving references to all matching files.
+- Scan each unique URL only once, even when referenced by multiple Markdown files.
 - Normalize URLs consistently, without incorrectly merging distinct webpages.
 - Refresh the index when files are created, modified, renamed or deleted.
 - Debounce frequent filesystem and metadata events.
+
+Example of supported frontmatter:
+
+```yaml
+---
+title: "QR Code Pricing | FbFast"
+url: "https://fbfast.io/pricing"
+language: "en"
+---
+```
+
+Unsupported format:
+
+```yaml
+---
+url:
+  - https://example.com/page
+  - https://example.com/another-page
+---
+```
 
 Indexing must not automatically trigger HTTP scanning.
 
@@ -300,6 +324,102 @@ Follow Obsidian's Developer Policies and Plugin Guidelines.
 - Validate and safely handle external HTML, URLs and response data.
 - Render untrusted metadata as text, not executable HTML.
 
+## Coding conventions
+
+### General principles
+
+- Use TypeScript with strict type checking.
+- Follow existing project formatting and linting rules.
+- Prefer readable, maintainable code over unnecessary abstractions.
+- Use descriptive names for variables, functions, classes and interfaces.
+- Keep functions focused on a single responsibility.
+- Prefer early returns to reduce nesting.
+- Avoid duplicated logic and magic values.
+- Prefer explicit types where they improve clarity.
+- Do not introduce unnecessary dependencies.
+- Prefer `async/await` over promise chains.
+
+### Function documentation and comments
+
+- Add JSDoc comments to public APIs, non-trivial functions and methods whose purpose or behavior is not immediately obvious.
+- Document important algorithms, edge cases, unexpected behavior and technical limitations.
+- Explain **why** something is implemented in a particular way rather than repeating what the code already says.
+- Include parameter and return descriptions when they provide useful additional information.
+- Do not comment every function automatically.
+- Avoid redundant comments on simple getters, setters, obvious utility functions or self-explanatory code.
+- Keep comments short, accurate and synchronized with the implementation.
+- Write code comments and JSDoc in English.
+
+Example of useful documentation:
+
+```typescript
+/**
+ * Normalizes a URL for indexing without merging
+ * webpages that may have different content.
+ */
+function normalizeUrl(value: string): string | null {
+  // Implementation
+  return null;
+}
+```
+
+Example of unnecessary documentation:
+
+```typescript
+// Returns the title.
+function getTitle(): string {
+  return this.title;
+}
+```
+
+### Conditional statements and braces
+
+- Always use curly braces `{}` when an `if` condition contains two or more logical conditions.
+- This includes expressions combined with `&&`, `||` or nested logical operators.
+- Do not use single-line conditional statements without braces when multiple conditions are involved.
+- For simple single-condition guard clauses, omitting braces is acceptable.
+- Use braces for multi-line statements and when they improve readability.
+- Apply these rules consistently to `else if` conditions as well.
+
+Incorrect:
+
+```typescript
+if (typeof value !== 'string' || !value.trim()) return null;
+```
+
+Correct:
+
+```typescript
+if (typeof value !== 'string' || !value.trim()) {
+  return null;
+}
+```
+
+Acceptable for a simple condition:
+
+```typescript
+if (!value) return null;
+```
+
+Also correct:
+
+```typescript
+if (!value) {
+  return null;
+}
+```
+
+Prefer consistent formatting within the same function or module.
+
+### Error handling
+
+- Handle expected errors explicitly.
+- Avoid silently swallowing exceptions.
+- Use meaningful error messages.
+- Do not use exceptions for normal control flow.
+- Preserve useful error context when propagating failures.
+- Never allow a single failed HTTP request to interrupt unrelated scans.
+
 ## Testing
 
 Use automated tests for logic that does not require a running Obsidian instance.
@@ -307,7 +427,9 @@ Use automated tests for logic that does not require a running Obsidian instance.
 Prioritize:
 
 - URL extraction and normalization.
-- Duplicate URL handling.
+- Validation of single-string URL properties.
+- Rejection of URL arrays and unsupported property types.
+- Duplicate URL handling across different Markdown files.
 - HTML metadata parsing.
 - Repeated tags and alternate links.
 - Unicode code point lengths.
@@ -338,6 +460,8 @@ Manually verify plugin lifecycle, view registration, scanning and UI integration
 - Preserve compatibility with the Obsidian Plugin API.
 - Handle errors without interrupting unrelated scans.
 - Use small, testable modules.
+- Document non-trivial functions and important implementation decisions.
+- Use curly braces for conditional statements with multiple logical conditions.
 - Maintain backwards compatibility for stored data.
 - Document meaningful architecture or configuration changes.
 - Update existing tests when modifying behavior.
@@ -345,6 +469,9 @@ Manually verify plugin lifecycle, view registration, scanning and UI integration
 ### Don't
 
 - Modify Markdown files or their frontmatter.
+- Support multiple URLs in a single Markdown file.
+- Add redundant comments to obvious functions or statements.
+- Write single-line `if` statements with multiple logical conditions.
 - Add unrelated features or dependencies.
 - Start network scans without user action.
 - Execute scripts from downloaded pages.
