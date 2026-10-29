@@ -327,9 +327,14 @@ it('keeps selected pages when a scan is stopped before completion', async () => 
 it('opens filters in a popup, preserves choices on reopening and applies pending search on close', async () => {
   vi.useFakeTimers();
   const s = await setup(120);
+  s.data.settings.urlProperty = 'published_url';
   expect(s.view.contentEl.querySelector('input[type="search"], select')).toBeNull();
   s.view.contentEl.querySelector('.seo-audit-pagination')!.querySelectorAll('button')[1]!.click();
   const popup = openFilters(s.view);
+  const field = popup.querySelector<HTMLSelectElement>('select[aria-label="Metadata filter"]')!;
+  expect(field.value).toBe('url');
+  expect(field.selectedOptions[0]!.textContent).toBe('published_url');
+  expect(field.closest('.seo-audit-filter-search-group')!.querySelector('input[type="search"]')).not.toBeNull();
   const status = popup.querySelector<HTMLSelectElement>('select[aria-label="HTTP status"]')!;
   status.value = 'unscanned'; status.dispatchEvent(new Event('change'));
   expect(s.view.contentEl.querySelector('.seo-audit-pagination')!.textContent).toContain('Page 1 of 3');
@@ -346,4 +351,30 @@ it('opens filters in a popup, preserves choices on reopening and applies pending
   await s.detailsView.onClose();
   await s.view.onClose();
   expect(document.querySelector('.seo-audit-filters')).toBeNull();
+});
+
+it('clears filters and pending search while keeping table sorting', async () => {
+  vi.useFakeTimers();
+  const s = await setup(120);
+  const popup = openFilters(s.view);
+  const change = (label: string, value: string) => {
+    const select = popup.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)!;
+    select.value = value; select.dispatchEvent(new Event('change'));
+  };
+  change('HTTP status', 'errors');
+  change('Metadata filter', 'title');
+  change('Value presence', 'missing');
+  const search = popup.querySelector<HTMLInputElement>('input[type="search"]')!;
+  search.value = 'page119'; search.dispatchEvent(new Event('input'));
+  Array.from(popup.querySelectorAll('button')).find(button => button.textContent === 'Clear filter')!.click();
+  expect(popup.querySelector<HTMLInputElement>('input[type="search"]')!.value).toBe('');
+  expect(popup.querySelector<HTMLSelectElement>('select[aria-label="HTTP status"]')!.value).toBe('any');
+  expect(popup.querySelector<HTMLSelectElement>('select[aria-label="Metadata filter"]')!.value).toBe('url');
+  expect(popup.querySelector<HTMLSelectElement>('select[aria-label="Value presence"]')!.value).toBe('any');
+  expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(50);
+  await vi.advanceTimersByTimeAsync(201);
+  expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(50);
+  expect(s.view.contentEl.querySelector('.seo-audit-pagination')!.textContent).toContain('Page 1 of 3');
+  await s.detailsView.onClose();
+  await s.view.onClose();
 });

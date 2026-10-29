@@ -18,6 +18,10 @@ it('filters status, unscanned, errors and metadata presence including empty valu
   expect(filterPages(pages, latest, { ...base, presence: 'present' })).toEqual([pages[0]]);
   expect(filterPages(pages, latest, { ...base, field: 'description', presence: 'missing' })).toHaveLength(2);
 });
+it('filters URL presence for indexed pages even before scanning', () => {
+  expect(filterPages(pages, latest, { ...base, field: 'url', presence: 'present' })).toEqual(pages);
+  expect(filterPages(pages, latest, { ...base, field: 'url', presence: 'missing' })).toEqual([]);
+});
 it('sorts numeric columns numerically and puts unscanned last', () => {
   expect(filterPages(pages, latest, { ...base, sort: 'responseTimeMs' })).toEqual([pages[1], pages[0], pages[2]]);
 });

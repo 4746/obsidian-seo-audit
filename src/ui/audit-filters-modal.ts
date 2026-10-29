@@ -2,7 +2,7 @@ import { Modal, type App } from 'obsidian';
 import type { AuditController } from './audit-controller';
 import type { TableFilter } from './audit-table';
 import { fieldKeys } from '../types';
-import { el, select } from './dom';
+import { button, el, select } from './dom';
 
 /** Edits the current table filter without resetting it when the popup closes. */
 export class AuditFiltersModal extends Modal {
@@ -33,7 +33,10 @@ export class AuditFiltersModal extends Modal {
     this.setTitle(t('filters'));
     this.contentEl.classList.add('seo-audit', 'seo-audit-filters');
     this.contentEl.replaceChildren();
-    const search = el(this.contentEl, 'input');
+    const searchGroup = el(this.contentEl, 'div', undefined, 'seo-audit-filter-search-group');
+    searchGroup.setAttribute('role', 'group');
+    searchGroup.setAttribute('aria-label', t('metadataFilter'));
+    const search = el(searchGroup, 'input');
     search.type = 'search'; search.placeholder = t('search'); search.setAttribute('aria-label', t('search'));
     search.value = this.filter.search;
     search.oninput = () => {
@@ -44,18 +47,29 @@ export class AuditFiltersModal extends Modal {
         this.changed();
       }, 200);
     };
+    select(searchGroup, t('metadataFilter'), [['url', this.controller.data.settings.urlProperty], ...fieldKeys.map(key => [key, key] as [string, string])], this.filter.field, value => {
+      this.filter.field = value as TableFilter['field'];
+      this.changed();
+    });
     this.statusFilter = select(this.contentEl, t('status'), [], this.filter.status, value => {
       this.filter.status = value;
       this.changed();
     });
     this.statusSignature = '';
     this.refreshStatuses();
-    select(this.contentEl, t('metadataFilter'), fieldKeys.map(key => [key, key]), this.filter.field, value => {
-      this.filter.field = value as TableFilter['field'];
-      this.changed();
-    });
     select(this.contentEl, t('presence'), [['any', t('any')], ['present', t('present')], ['missing', t('missing')]], this.filter.presence, value => {
       this.filter.presence = value;
+      this.changed();
+    });
+    const actions = el(this.contentEl, 'div', undefined, 'seo-audit-filter-actions');
+    button(actions, t('clear'), () => {
+      window.clearTimeout(this.searchTimer);
+      this.searchTimer = undefined;
+      this.filter.search = '';
+      this.filter.status = 'any';
+      this.filter.field = 'url';
+      this.filter.presence = 'any';
+      this.render();
       this.changed();
     });
   }

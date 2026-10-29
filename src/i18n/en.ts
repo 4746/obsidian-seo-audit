@@ -1,4 +1,5 @@
 export const en = {
+  clear: 'Clear filter',
   filters: 'Filters', presence: 'Value presence',
   pageSize: 'Rows per page',
   scanPage: 'Scan page', refreshPage: 'Refresh page data', scanBusy: 'Scan in progress',

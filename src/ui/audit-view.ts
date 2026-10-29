@@ -11,7 +11,7 @@ export const VIEW_TYPE = 'seo-audit';
 export class AuditView extends ItemView {
   private tableState: AuditTableState = {
     selected: new Set(), focused: null, page: 0, pageSize: 50,
-    filter: { search: '', status: 'any', field: 'title', presence: 'any', sort: 'url', descending: false },
+    filter: { search: '', status: 'any', field: 'url', presence: 'any', sort: 'url', descending: false },
   };
   private tableHost!: HTMLElement;
   private tableActions!: HTMLElement;

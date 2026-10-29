@@ -28,7 +28,7 @@ return result.metadata?.fields[column as FieldKey].map(v => v.value).join(' · '
     default: return result[column as 'status' | 'responseTimeMs' | 'scannedAt' | 'finalUrl'];
   }
 }
-export interface TableFilter { search: string; status: string; field: FieldKey; presence: string; sort: Column; descending: boolean }
+export interface TableFilter { search: string; status: string; field: FieldKey | 'url'; presence: string; sort: Column; descending: boolean }
 export function filterPages(pages: IndexedPage[], latest: Record<string, AuditResult>, filter: TableFilter): IndexedPage[] {
   const search = filter.search.toLocaleLowerCase();
   return pages.filter(page => {
@@ -46,10 +46,10 @@ return false;
 return false;
 }
     if (filter.presence !== 'any') {
-      if (!r) {
+      if (filter.field !== 'url' && !r) {
 return false;
 }
-      const has = r.metadata?.fields[filter.field].some(v => v.value.trim().length > 0) ?? false;
+      const has = filter.field === 'url' ? page.url.trim().length > 0 : r?.metadata?.fields[filter.field].some(v => v.value.trim().length > 0) ?? false;
       if (filter.presence === 'present' ? !has : has) {
 return false;
 }
