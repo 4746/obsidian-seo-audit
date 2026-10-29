@@ -15,7 +15,7 @@ export function select(parent: HTMLElement, label: string, options: [string, str
 }
 export function fileLinks(parent: HTMLElement, page: IndexedPage, t: Translator, openFile: (path: string) => void): void {
   for (const path of page.files) {
-    const link = el(parent, 'a', path, 'seo-audit-file'); link.href = '#'; link.title = t('openFile');
+    const link = el(parent, 'a', path, 'seo-audit-file'); link.href = '#'; link.setAttribute('aria-label', `${t('openFile')}: ${path}`);
     link.onclick = event => {
       event.preventDefault(); event.stopPropagation();
       openFile(path);

@@ -2,6 +2,7 @@ export const en = {
   pluginName: 'SEO Audit', english: 'English', ukrainian: 'Українська',
   open: 'Open SEO Audit', all: 'Scan all', selected: 'Scan selected', stop: 'Stop', search: 'Search URLs, files and metadata…',
   status: 'HTTP status', any: 'All', unscanned: 'Not scanned', errors: 'Errors', present: 'Present', missing: 'Missing',
+  pagination: 'Pagination', copyUrl: 'Copy URL', copyFailed: 'Could not copy URL',
   tableSettings: 'Settings',
   metadataFilter: 'Metadata filter', columns: 'Columns', exportJson: 'Export JSON', exportCsv: 'Export CSV',
   files: 'Source files', url: 'URL', finalUrl: 'Final URL', responseTimeMs: 'HTTP response time (ms)', scannedAt: 'Last scan',

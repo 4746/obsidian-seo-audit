@@ -1,3 +1,4 @@
+import { Notice } from 'obsidian';
 import type { AuditController } from './audit-controller';
 import type { Translator } from '../i18n';
 import { button, el, fileLinks } from './dom';
@@ -65,24 +66,37 @@ export function renderAuditTable(host: HTMLElement, controller: AuditController,
   const pages = filterPages(controller.index.pages(), controller.data.cache.latest, state.filter);
   state.page = Math.max(0, Math.min(state.page, Math.ceil(pages.length / state.pageSize) - 1));
   const visiblePages = pages.slice(state.page * state.pageSize, (state.page + 1) * state.pageSize);
-  host.replaceChildren();
-  const nav = el(host, 'div', undefined, 'seo-audit-toolbar');
-  button(nav, t('previous'), () => { state.page--; actions.render(); }).disabled = state.page === 0;
-  el(nav, 'span', `${t('page')} ${state.page + 1} ${t('of')} ${Math.max(1, Math.ceil(pages.length / state.pageSize))} · ${pages.length} ${t('pages')}`);
-  button(nav, t('next'), () => { state.page++; actions.render(); }).disabled = (state.page + 1) * state.pageSize >= pages.length;
-  if (!pages.length) { el(host, 'p', t('empty')); return; }
-  const wrap = el(host, 'div', undefined, 'seo-audit-table-scroll');
+  // Keep the native scroll container alive across data updates.
+  const existingWrap = host.querySelector<HTMLElement>('.seo-audit-table-scroll');
+  const scrollLeft = existingWrap?.scrollLeft ?? 0;
+  for (const child of Array.from(host.children)) {
+    if (child !== existingWrap) child.remove();
+  }
+  const renderPagination = (): void => {
+    const nav = el(host, 'nav', undefined, 'seo-audit-pagination');
+    nav.setAttribute('aria-label', t('pagination'));
+    button(nav, t('previous'), () => { state.page--; actions.render(); }).disabled = state.page === 0;
+    const summary = el(nav, 'span', undefined, 'seo-audit-page-summary');
+    el(summary, 'span', `${t('page')} ${state.page + 1} ${t('of')} ${Math.max(1, Math.ceil(pages.length / state.pageSize))}`);
+    el(summary, 'span', `${pages.length} ${t('pages')}`, 'seo-audit-page-count');
+    button(nav, t('next'), () => { state.page++; actions.render(); }).disabled = (state.page + 1) * state.pageSize >= pages.length;
+  };
+  renderPagination();
+  if (!pages.length) { existingWrap?.remove(); el(host, 'p', t('empty')); return; }
+  if (existingWrap) host.prepend(host.lastElementChild!);
+  const wrap = existingWrap ?? el(host, 'div', undefined, 'seo-audit-table-scroll');
+  wrap.replaceChildren();
   const table = el(wrap, 'table', undefined, 'seo-audit-table');
   const head = el(el(table, 'thead'), 'tr');
   const selectAll = el(el(head, 'th'), 'input'); selectAll.type = 'checkbox'; selectAll.setAttribute('aria-label', t('selectPage'));
   selectAll.checked = visiblePages.every(p => state.selected.has(p.url));
   selectAll.indeterminate = !selectAll.checked && visiblePages.some(p => state.selected.has(p.url));
   selectAll.onchange = () => { for (const p of visiblePages) if (selectAll.checked) state.selected.add(p.url); else state.selected.delete(p.url); actions.refresh(); };
-  const shown = columns.filter(column => controller.data.settings.visibleColumns.includes(column));
+  const shown = columns.filter(column => column === 'url' || controller.data.settings.visibleColumns.includes(column));
   for (const column of shown) {
     const th = el(head, 'th'); th.scope = 'col';
     th.setAttribute('aria-sort', state.filter.sort === column ? state.filter.descending ? 'descending' : 'ascending' : 'none');
-    button(th, columnLabel(column, t) + (state.filter.sort === column ? state.filter.descending ? ' ↓' : ' ↑' : ''), () => {
+    button(th, (column === 'url' ? controller.data.settings.urlProperty : columnLabel(column, t)) + (state.filter.sort === column ? state.filter.descending ? ' ↓' : ' ↑' : ''), () => {
       state.filter.descending = state.filter.sort === column ? !state.filter.descending : false; state.filter.sort = column; actions.render();
     });
   }
@@ -92,20 +106,40 @@ export function renderAuditTable(host: HTMLElement, controller: AuditController,
     const row = el(body, 'tr'); row.tabIndex = 0; row.setAttribute('aria-label', `${t('details')}: ${page.url}`);
     if (state.focused === page.url) row.classList.add('is-selected');
     if (result?.error || (result?.status ?? 0) >= 400) row.classList.add('seo-audit-error-row');
-    row.onclick = () => { state.focused = page.url; actions.render(); actions.details(); };
-    row.onkeydown = event => { if (event.target === row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); state.focused = page.url; actions.details(); } };
+    const showDetails = (): void => {
+      state.focused = page.url;
+      for (const other of body.rows) other.classList.toggle('is-selected', other === row);
+      actions.details();
+    };
+    row.onclick = showDetails;
+    row.onkeydown = event => { if (event.target === row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); showDetails(); } };
     const check = el(el(row, 'td'), 'input'); check.type = 'checkbox'; check.checked = state.selected.has(page.url); check.setAttribute('aria-label', `${t('select')}: ${page.url}`);
     check.onclick = e => e.stopPropagation(); check.onchange = () => { if (check.checked) state.selected.add(page.url); else state.selected.delete(page.url); actions.refresh(); };
     for (const column of shown) {
       const cell = el(row, 'td'); const value = columnValue(page, result, column);
       if (column === 'files') fileLinks(cell, page, t, actions.openFile);
-      else if (column === 'url') { const link = el(cell, 'a', page.url); link.href = page.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.title = t('openUrl'); link.onclick = e => e.stopPropagation(); }
+      else if (column === 'url') {
+        const content = el(cell, 'div', undefined, 'seo-audit-url');
+        const link = el(content, 'a', page.url);
+        link.href = page.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.onclick = e => e.stopPropagation();
+        const copy = button(content, '⧉', () => {
+          void navigator.clipboard.writeText(page.url).catch(error => {
+            console.error('SEO Audit clipboard', error);
+            new Notice(t('copyFailed'));
+          });
+        });
+        copy.classList.add('seo-audit-copy');
+        copy.setAttribute('aria-label', t('copyUrl'));
+        copy.addEventListener('click', event => event.stopPropagation());
+      }
       else {
         const text = column === 'scannedAt' && value ? new Date(String(value)).toLocaleString() : value === null || value === '' ? t(result ? 'missing' : 'unscanned') : String(value);
-        cell.textContent = text; cell.title = text;
+        cell.textContent = text;
         if (value === null || value === '') cell.classList.add('seo-audit-missing');
         if ((column === 'status' && typeof value === 'number' && value >= 400) || (column === 'error' && value)) cell.classList.add('seo-audit-error');
       }
     }
   }
+  renderPagination();
+  wrap.scrollLeft = scrollLeft;
 }

@@ -27,7 +27,7 @@ export class TableSettingsModal extends Modal {
     this.contentEl.replaceChildren();
     el(this.contentEl, 'h3', t('columns'));
     const choices = el(this.contentEl, 'ul', undefined, 'seo-audit-column-choices');
-    for (const column of columns) {
+    for (const column of columns.filter(column => column !== 'url')) {
       const row = el(choices, 'li');
       const label = el(row, 'label');
       const checkbox = el(label, 'input');

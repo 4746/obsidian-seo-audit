@@ -38,6 +38,7 @@ it('paginates large indices and scans all/selected unique URLs', async () => {
 it('renders details as safe text with duplicates, all H1/alternates and lengths; opens all source files', async () => {
   const s = await setup();
   s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 404, responseTimeMs: 45, xRobotsTag: [{ value: 'noindex', length: 7 }], contentType: 'text/html', error: { kind: 'http', message: 'HTTP 404' }, metadata: parseHtml('<title>&lt;img onerror=bad()&gt;</title><meta name="description" content="one"><meta name="description" content="two"><h1>First 😀</h1><h1>Second</h1><link rel="alternate" hreflang="x-default" href="/">') };
+  vi.useFakeTimers(); s.notify(); await vi.advanceTimersByTimeAsync(151);
   s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!.click();
   const detail = s.view.contentEl.querySelector('.seo-audit-details')!;
   expect(detail.textContent).toContain('First 😀'); expect(detail.textContent).toContain('Second');
@@ -56,7 +57,8 @@ it('debounces search, saves column choices and updates exact status options afte
   expect(s.view.contentEl.querySelector('.seo-audit-column-choices')).toBeNull();
   menuFor(s.view).items.find(item => item.title === 'Settings')!.action();
   const column = document.querySelector<HTMLInputElement>('.seo-audit-column-choices input')!;
-  column.click(); expect(s.scheduleSave).toHaveBeenCalled(); expect(s.data.settings.visibleColumns).not.toContain('url');
+  column.click(); expect(s.scheduleSave).toHaveBeenCalled(); expect(s.data.settings.visibleColumns).not.toContain('files');
+  expect(s.data.settings.visibleColumns).toContain('url');
   s.data.cache.latest['https://page1.test'] = { url: 'https://page1.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 503, responseTimeMs: 1, xRobotsTag: [], contentType: null, error: { kind: 'http', message: 'HTTP 503' }, metadata: null };
   s.notify(); await vi.advanceTimersByTimeAsync(151);
   expect(Array.from(s.view.contentEl.querySelectorAll('select[aria-label="HTTP status"] option')).map(o => o.textContent)).toContain('503');
@@ -91,4 +93,65 @@ it('disables unavailable scan actions in the pane menu', async () => {
   expect(document.querySelector('.seo-audit-column-choices')).not.toBeNull();
   await s.view.onClose();
   expect(document.querySelector('.seo-audit-column-choices')).toBeNull();
+});
+
+it('keeps URL visible, copies it without selecting a row and preserves rows on detail clicks', async () => {
+  const s = await setup();
+  s.data.settings.visibleColumns = ['status'];
+  s.data.settings.urlProperty = 'published';
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+  vi.useFakeTimers(); s.notify(); await vi.advanceTimersByTimeAsync(151);
+  const row = s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!;
+  const table = row.closest('table');
+  expect(table!.querySelector('thead')!.textContent).toContain('published');
+  row.querySelector<HTMLButtonElement>('.seo-audit-copy')!.click();
+  expect(writeText).toHaveBeenCalledWith('https://page0.test');
+  expect(s.view.contentEl.querySelector('.seo-audit-details')!.textContent).toContain('Select a row');
+  row.click();
+  expect(s.view.contentEl.querySelector('table')).toBe(table);
+  expect(row.classList.contains('is-selected')).toBe(true);
+  expect(s.view.contentEl.querySelector('.seo-audit-details')!.textContent).toContain('Not scanned');
+  menuFor(s.view).items.find(item => item.title === 'Settings')!.action();
+  expect(Array.from(document.querySelectorAll('.seo-audit-column-choices label')).map(label => label.textContent)).not.toContain('URL');
+  await s.view.onClose();
+});
+it('keeps both pagination controls in sync', async () => {
+  const s = await setup(120);
+  const navs = () => s.view.contentEl.querySelectorAll<HTMLElement>('.seo-audit-pagination');
+  expect(navs()).toHaveLength(2);
+  navs()[1]!.querySelectorAll('button')[1]!.click();
+  for (const nav of navs()) expect(nav.textContent).toContain('Page 2 of 3');
+  expect(s.view.contentEl.querySelector('tbody tr a')!.textContent).toBeTruthy();
+  navs()[0]!.querySelectorAll('button')[0]!.click();
+  for (const nav of navs()) expect(nav.textContent).toContain('Page 1 of 3');
+  await s.view.onClose();
+});
+
+it('preserves native horizontal scrolling through progress and result updates', async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  const wrap = s.view.contentEl.querySelector<HTMLElement>('.seo-audit-table-scroll')!;
+  const row = wrap.querySelector('tbody tr');
+  wrap.scrollLeft = 240;
+  s.plugin.scanner.progress.active = 1;
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(wrap.querySelector('tbody tr')).toBe(row);
+  expect(wrap.scrollLeft).toBe(240);
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], contentType: 'text/html', error: null, metadata: null };
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(s.view.contentEl.querySelector('.seo-audit-table-scroll')).toBe(wrap);
+  expect(wrap.scrollLeft).toBe(240);
+  expect(wrap.textContent).toContain('200');
+  const wheel = new WheelEvent('wheel', { deltaX: 100, bubbles: true, cancelable: true });
+  wrap.dispatchEvent(wheel);
+  expect(wheel.defaultPrevented).toBe(false);
+  await s.view.onClose();
+});
+
+it('does not create hover tooltips in the audit table', async () => {
+  const s = await setup();
+  expect(s.view.contentEl.querySelector('.seo-audit-table [title], .seo-audit-table [data-tooltip]')).toBeNull();
+  expect(s.view.contentEl.querySelector('.seo-audit-copy')!.getAttribute('aria-label')).toBe('Copy URL');
+  await s.view.onClose();
 });

@@ -6,6 +6,7 @@ import { TableSettingsModal } from './table-settings-modal';
 import { fieldKeys } from '../types';
 import { download, exportCsv, exportJson } from '../export/export-service';
 import { el, select } from './dom';
+import type { AuditResult } from '../types';
 
 export const VIEW_TYPE = 'seo-audit';
 export class AuditView extends ItemView {
@@ -23,6 +24,8 @@ export class AuditView extends ItemView {
   private lastLocale = '';
   private statusFilter!: HTMLSelectElement;
   private statusOptions = '';
+  private tableSignature = '';
+  private tableResults: (AuditResult | undefined)[] = [];
 
   constructor(leaf: WorkspaceLeaf, private plugin: AuditController) { super(leaf); }
   getViewType(): string { return VIEW_TYPE; }
@@ -77,7 +80,7 @@ export class AuditView extends ItemView {
     const t = this.plugin.t;
     this.lastLocale = t('open');
     this.contentEl.replaceChildren();
-    el(this.contentEl, 'h2', t('pluginName'));
+    this.tableSignature = '';
     const filters = el(this.contentEl, 'div', undefined, 'seo-audit-toolbar');
     const search = el(filters, 'input'); search.type = 'search'; search.placeholder = t('search'); search.setAttribute('aria-label', t('search')); search.value = this.tableState.filter.search;
     search.oninput = () => { window.clearTimeout(this.searchTimer); this.searchTimer = window.setTimeout(() => { this.tableState.filter.search = search.value; this.tableState.page = 0; this.renderTable(); }, 200); };
@@ -107,17 +110,26 @@ export class AuditView extends ItemView {
     this.progressHost.replaceChildren();
     el(this.progressHost, 'span', `${t(p.running ? 'running' : 'idle')} · ${p.completed}/${p.total} ${t('completed')} · ${p.active} ${t('active')} · ${this.tableState.selected.size} ${t('selectedCount')}`);
     const progress = el(this.progressHost, 'progress'); progress.max = p.total || 1; progress.value = p.completed;
-    this.renderTable(); this.renderDetails();
+    this.renderTable(false); this.renderDetails();
   }
   private openFile = (path: string): void => {
     const file = this.app.vault.getFileByPath(path);
     if (file) void this.app.workspace.getLeaf(true).openFile(file);
   };
-  private renderTable(): void {
+  private renderTable(force = true): void {
+    const pages = this.plugin.index.pages();
+    const results = pages.map(page => this.plugin.data.cache.latest[page.url]);
+    const signature = JSON.stringify([pages, this.plugin.data.settings.urlProperty, this.plugin.data.settings.visibleColumns, this.tableState.filter, this.tableState.page, this.tableState.pageSize, [...this.tableState.selected], this.tableState.focused]);
+    // Progress-only notifications must not interrupt native scrolling or mouse gestures.
+    if (!force && signature === this.tableSignature && results.length === this.tableResults.length && results.every((result, index) => result === this.tableResults[index])) {
+      return;
+    }
     renderAuditTable(this.tableHost, this.plugin, this.tableState, {
       render: () => this.renderTable(), details: () => this.renderDetails(),
       refresh: () => this.refresh(), openFile: this.openFile,
     });
+    this.tableSignature = signature;
+    this.tableResults = results;
   }
   private renderDetails(): void {
     renderAuditDetails(this.detailHost, this.plugin, this.tableState.focused, this.openFile, () => {

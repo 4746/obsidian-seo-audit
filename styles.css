@@ -10,12 +10,25 @@
 .seo-audit .seo-audit-column-choices span { min-width: 0; overflow-wrap: anywhere; }
 .seo-audit .seo-audit-progress { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; color: var(--text-muted); }
 .seo-audit .seo-audit-progress progress { max-width: 200px; accent-color: var(--interactive-accent); }
-.seo-audit .seo-audit-table-scroll { overflow: auto; max-height: 60vh; border: 1px solid var(--background-modifier-border); border-radius: 6px; }
+.seo-audit .seo-audit-table-scroll { overflow-x: auto; border: 1px solid var(--background-modifier-border); border-radius: 6px; }
+.seo-audit .seo-audit-table { table-layout: auto; width: max-content; min-width: 100%; }
+.seo-audit .seo-audit-table th:first-child { width: 36px; min-width: 36px; }
+.seo-audit .seo-audit-table th { min-width: 160px; overflow-wrap: anywhere; }
+.seo-audit .seo-audit-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: 6px; background: var(--background-secondary); }
+.seo-audit .seo-audit-page-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; text-align: center; font-size: var(--font-ui-small); }
+.seo-audit .seo-audit-page-count { color: var(--text-muted); }
+.seo-audit .seo-audit-url { display: flex; align-items: flex-start; gap: 6px; }
+.seo-audit .seo-audit-url a { min-width: 0; overflow-wrap: anywhere; }
+.seo-audit .seo-audit-copy { flex-shrink: 0; opacity: 0; padding: 2px 5px; height: auto; }
+.seo-audit .seo-audit-url:hover .seo-audit-copy, .seo-audit .seo-audit-url:focus-within .seo-audit-copy { opacity: 1; }
+@media (hover: none) {
+  .seo-audit .seo-audit-copy { opacity: 1; }
+}
 .seo-audit table { border-collapse: collapse; width: 100%; font-size: var(--font-ui-small); }
 .seo-audit th, .seo-audit td { padding: 8px 10px; border-bottom: 1px solid var(--background-modifier-border); text-align: start; vertical-align: top; }
-.seo-audit .seo-audit-table th { position: sticky; top: 0; z-index: 1; background: var(--background-secondary); white-space: nowrap; }
+.seo-audit .seo-audit-table th { position: sticky; top: 0; z-index: 1; background: var(--background-secondary); }
 .seo-audit th button { background: transparent; box-shadow: none; padding: 0; color: var(--text-normal); font-weight: 600; }
-.seo-audit .seo-audit-table td { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seo-audit .seo-audit-table td { max-width: 320px; overflow-wrap: anywhere; white-space: normal; }
 .seo-audit .seo-audit-table tbody tr { cursor: pointer; }
 .seo-audit .seo-audit-table tbody tr:hover, .seo-audit .seo-audit-table tr.is-selected { background: var(--background-modifier-hover); }
 .seo-audit .seo-audit-table tr:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: -2px; }
