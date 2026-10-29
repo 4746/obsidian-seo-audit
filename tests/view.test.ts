@@ -280,3 +280,42 @@ it('applies and saves page size choices from table settings and resets paginatio
   await s.view.onClose();
   await s.detailsView.onClose();
 });
+
+it.each(['Scan selected', 'Scan all'])('clears scanned checkboxes after %s finishes, including fast scans', async action => {
+  vi.useFakeTimers();
+  const s = await setup();
+  const checks = () => s.view.contentEl.querySelectorAll<HTMLInputElement>('tbody input');
+  checks()[0]!.click();
+  s.scan.mockImplementation(() => {
+    Object.assign(s.plugin.scanner.progress, { running: true, total: action === 'Scan all' ? 2 : 1, completed: 0 });
+    s.notify();
+  });
+  menuFor(s.view).items.find(item => item.title === action)!.action();
+  expect(checks()[0]!.checked).toBe(true);
+  checks()[1]!.click();
+  Object.assign(s.plugin.scanner.progress, { running: false, completed: s.plugin.scanner.progress.total });
+  s.notify();
+  await vi.advanceTimersByTimeAsync(151);
+  expect(checks()[0]!.checked).toBe(false);
+  expect(checks()[1]!.checked).toBe(true);
+  expect(s.view.contentEl.querySelector<HTMLInputElement>('thead input')!.indeterminate).toBe(true);
+  expect(s.view.contentEl.querySelector('.seo-audit-selection-count')!.textContent).toBe('1 selected');
+  await s.detailsView.onClose();
+  await s.view.onClose();
+});
+
+it('keeps selected pages when a scan is stopped before completion', async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  s.view.contentEl.querySelector<HTMLInputElement>('tbody input')!.click();
+  s.scan.mockImplementation(() => {
+    Object.assign(s.plugin.scanner.progress, { running: true, total: 1, completed: 0 });
+    s.notify();
+  });
+  menuFor(s.view).items.find(item => item.title === 'Scan selected')!.action();
+  s.plugin.scanner.progress.running = false;
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(s.view.contentEl.querySelector<HTMLInputElement>('tbody input')!.checked).toBe(true);
+  await s.detailsView.onClose();
+  await s.view.onClose();
+});

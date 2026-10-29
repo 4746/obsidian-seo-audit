@@ -24,6 +24,7 @@ export class AuditView extends ItemView {
   private statusOptions = '';
   private tableSignature = '';
   private tableResults: (AuditResult | undefined)[] = [];
+  private scannedSelection = new Set<string>();
 
   constructor(leaf: WorkspaceLeaf, private plugin: AuditController) {
  super(leaf); 
@@ -42,8 +43,8 @@ export class AuditView extends ItemView {
     const running = this.plugin.scanner.progress.running;
     const urls = this.plugin.index.pages().map(page => page.url);
     const selected = urls.filter(url => this.tableState.selected.has(url));
-    menu.addItem(item => item.setTitle(t('all')).setIcon('play').setDisabled(running || !urls.length).onClick(() => this.plugin.scan(urls)));
-    menu.addItem(item => item.setTitle(t('selected')).setIcon('list-checks').setDisabled(running || !selected.length).onClick(() => this.plugin.scan(selected)));
+    menu.addItem(item => item.setTitle(t('all')).setIcon('play').setDisabled(running || !urls.length).onClick(() => this.scanPages(urls)));
+    menu.addItem(item => item.setTitle(t('selected')).setIcon('list-checks').setDisabled(running || !selected.length).onClick(() => this.scanPages(selected)));
     menu.addItem(item => item.setTitle(t('stop')).setIcon('square').setDisabled(!running).onClick(() => this.plugin.scanner.stop()));
     menu.addSeparator();
     menu.addItem(item => item.setTitle(t('reindex')).setIcon('refresh-cw').onClick(() => {
@@ -71,6 +72,16 @@ export class AuditView extends ItemView {
     this.contentEl.addClass('seo-audit', 'seo-audit-main');
     this.build();
     this.unsubscribe = this.plugin.subscribe(() => {
+      const progress = this.plugin.scanner.progress;
+      // Observe completion before debouncing: a short scan can finish between renders.
+      if (!progress.running) {
+        if (progress.completed === progress.total) {
+          for (const url of this.scannedSelection) {
+            this.tableState.selected.delete(url);
+          }
+        }
+        this.scannedSelection.clear();
+      }
       if (this.renderTimer) {
 return;
 }
@@ -87,6 +98,13 @@ this.refresh();
   async onClose(): Promise<void> {
     this.settingsModal?.close();
     this.unsubscribe?.(); window.clearTimeout(this.renderTimer); window.clearTimeout(this.searchTimer);
+  }
+  private scanPages(urls: string[]): void {
+    if (this.plugin.scanner.progress.running) {
+      return;
+    }
+    this.scannedSelection = new Set(urls.filter(url => this.tableState.selected.has(url)));
+    this.plugin.scan(urls);
   }
   private build(): void {
     window.clearTimeout(this.searchTimer);
