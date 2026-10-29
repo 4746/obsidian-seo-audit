@@ -16,7 +16,6 @@ export interface AuditResult {
   status: number | null;
   responseTimeMs: number | null;
   xRobotsTag: FieldValue[];
-  contentType: string | null;
   metadata: SeoMetadata | null;
   error: { kind: ErrorKind; message: string } | null;
 }

@@ -60,7 +60,7 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
   };
   const response = section('response', t('httpResponse'), true);
   const info = el(response, 'dl');
-  for (const [label, value] of [[t('url'), r.url], [t('finalUrl'), r.finalUrl ?? t('unknown')], [t('status'), r.status ?? t('unknown')], [t('responseTimeMs'), r.responseTimeMs ?? t('unknown')], [t('scannedAt'), new Date(r.scannedAt).toLocaleString()], [t('contentType'), r.contentType ?? t('unknown')]]) {
+  for (const [label, value] of [[t('url'), r.url], [t('finalUrl'), r.finalUrl ?? t('unknown')], [t('status'), r.status ?? t('unknown')], [t('responseTimeMs'), r.responseTimeMs ?? t('unknown')], [t('scannedAt'), new Date(r.scannedAt).toLocaleString()]]) {
     el(info, 'dt', String(label)); el(info, 'dd', String(value));
   }
   renderValues(response, t('xRobotsTag'), r.xRobotsTag, t);

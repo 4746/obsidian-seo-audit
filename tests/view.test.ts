@@ -43,7 +43,7 @@ it('paginates large indices and scans all/selected unique URLs', async () => {
 });
 it('renders details as safe text with duplicates, all H1/alternates and lengths; opens all source files', async () => {
   const s = await setup();
-  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 404, responseTimeMs: 45, xRobotsTag: [{ value: 'noindex', length: 7 }], contentType: 'text/html', error: { kind: 'http', message: 'HTTP 404' }, metadata: parseHtml('<title>&lt;img onerror=bad()&gt;</title><meta name="description" content="one"><meta name="description" content="two"><h1>First 😀</h1><h1>Second</h1><link rel="alternate" hreflang="x-default" href="/">') };
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 404, responseTimeMs: 45, xRobotsTag: [{ value: 'noindex', length: 7 }], error: { kind: 'http', message: 'HTTP 404' }, metadata: parseHtml('<title>&lt;img onerror=bad()&gt;</title><meta name="description" content="one"><meta name="description" content="two"><h1>First 😀</h1><h1>Second</h1><link rel="alternate" hreflang="x-default" href="/">') };
   vi.useFakeTimers(); s.notify(); await vi.advanceTimersByTimeAsync(151);
   s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!.click();
   const detail = document.querySelector('.seo-audit-details')!;
@@ -65,7 +65,7 @@ it('debounces search, saves column choices and updates exact status options afte
   const column = document.querySelector<HTMLInputElement>('.seo-audit-column-choices input')!;
   column.click(); expect(s.scheduleSave).toHaveBeenCalled(); expect(s.data.settings.visibleColumns).not.toContain('files');
   expect(s.data.settings.visibleColumns).toContain('url');
-  s.data.cache.latest['https://page1.test'] = { url: 'https://page1.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 503, responseTimeMs: 1, xRobotsTag: [], contentType: null, error: { kind: 'http', message: 'HTTP 503' }, metadata: null };
+  s.data.cache.latest['https://page1.test'] = { url: 'https://page1.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 503, responseTimeMs: 1, xRobotsTag: [], error: { kind: 'http', message: 'HTTP 503' }, metadata: null };
   s.notify(); await vi.advanceTimersByTimeAsync(151);
   expect(Array.from(s.view.contentEl.querySelectorAll('select[aria-label="HTTP status"] option')).map(o => o.textContent)).toContain('503');
   await s.view.onClose();
@@ -144,7 +144,7 @@ it('preserves native horizontal scrolling through progress and result updates', 
   s.notify(); await vi.advanceTimersByTimeAsync(151);
   expect(wrap.querySelector('tbody tr')).toBe(row);
   expect(wrap.scrollLeft).toBe(240);
-  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], contentType: 'text/html', error: null, metadata: null };
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], error: null, metadata: null };
   s.notify(); await vi.advanceTimersByTimeAsync(151);
   expect(s.view.contentEl.querySelector('.seo-audit-table-scroll')).toBe(wrap);
   expect(wrap.scrollLeft).toBe(240);
@@ -181,7 +181,7 @@ it('opens details outside the table and reuses the sidebar for another row', asy
 it('keeps accordion choices across result updates and uses an icon to close details', async () => {
   vi.useFakeTimers();
   const s = await setup();
-  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], contentType: 'text/html', error: null, metadata: parseHtml('<title>Hello 😀</title>') };
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], error: null, metadata: parseHtml('<title>Hello 😀</title>') };
   s.detailsView.setPage('https://page0.test');
   const host = s.detailsView.contentEl;
   const close = host.querySelector<HTMLButtonElement>('.seo-audit-detail-close')!;

@@ -13,9 +13,6 @@ return false;
   if (v.finalUrl !== null && typeof v.finalUrl !== 'string') {
 return false;
 }
-  if (v.contentType !== null && typeof v.contentType !== 'string') {
-return false;
-}
   if (v.status !== null && (typeof v.status !== 'number' || !Number.isInteger(v.status) || v.status < 100 || v.status > 599)) {
 return false;
 }
@@ -49,7 +46,10 @@ return { schemaVersion: 1, settings: cleanSettings(null), cache: { schemaVersion
     if (!validResult(value) || value.url !== url) {
 throw new Error('Invalid SEO Audit cache. Existing data was not overwritten.');
 }
-    latest[url] = value;
+    // Version 1 caches may still contain the retired optional response field.
+    const result = { ...value };
+    Reflect.deleteProperty(result, 'contentType');
+    latest[url] = result;
   }
   return { schemaVersion: 1, settings: cleanSettings(raw.settings), cache: { schemaVersion: 1, latest } };
 }

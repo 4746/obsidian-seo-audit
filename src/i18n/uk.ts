@@ -15,7 +15,7 @@ export const uk: Record<Message, string> = {
   unknown: 'Недоступно', never: 'Ніколи', details: 'Деталі сторінки', close: 'Закрити деталі',
   select: 'Вибрати сторінку', selectPage: 'Вибрати видимі рядки', previous: 'Назад', next: 'Далі', page: 'Сторінка',
   of: 'з', pages: 'сторінок', value: 'Оригінальне значення', length: 'Символів',
-  error: 'Помилка', contentType: 'Тип вмісту', noDetails: 'Виберіть рядок для перегляду всіх метаданих.',
+  error: 'Помилка', noDetails: 'Виберіть рядок для перегляду всіх метаданих.',
   idle: 'Готово', running: 'Сканування', completed: 'завершено', active: 'активних',
   settings: 'Налаштування SEO Audit', property: 'URL-властивість frontmatter',
   propertyHelp: 'Властивість верхнього рівня YAML з HTTP(S) URL або списком URL. Типово: url.',

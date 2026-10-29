@@ -4,7 +4,7 @@ import type { Translator } from '../i18n';
 import { button, el, fileLinks } from './dom';
 import { fieldKeys, type AuditResult, type FieldKey, type IndexedPage } from '../types';
 
-export const columns = ['url', 'files', 'status', ...fieldKeys, 'h1Count', 'responseTimeMs', 'scannedAt', 'finalUrl', 'xRobotsTag', 'alternates', 'h1', 'contentType', 'error'] as const;
+export const columns = ['url', 'files', 'status', ...fieldKeys, 'h1Count', 'responseTimeMs', 'scannedAt', 'finalUrl', 'xRobotsTag', 'alternates', 'h1', 'error'] as const;
 export type Column = typeof columns[number];
 export function columnValue(page: IndexedPage, result: AuditResult | undefined, column: Column): string | number | null {
   if (column === 'url') {
@@ -25,7 +25,7 @@ return result.metadata?.fields[column as FieldKey].map(v => v.value).join(' · '
     case 'alternates': return result.metadata?.alternates.map(v => `${v.hreflang.value}: ${v.href.value}`).join(' · ') ?? null;
     case 'xRobotsTag': return result.xRobotsTag.map(v => v.value).join(' · ');
     case 'error': return result.error ? `${result.error.kind}: ${result.error.message}` : null;
-    default: return result[column as 'status' | 'responseTimeMs' | 'scannedAt' | 'finalUrl' | 'contentType'];
+    default: return result[column as 'status' | 'responseTimeMs' | 'scannedAt' | 'finalUrl'];
   }
 }
 export interface TableFilter { search: string; status: string; field: FieldKey; presence: string; sort: Column; descending: boolean }

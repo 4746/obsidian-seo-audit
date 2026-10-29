@@ -59,7 +59,7 @@ throw new Cancelled();
   async audit(url: string, settings: AuditSettings, signal: AbortSignal): Promise<AuditResult | null> {
     const result: AuditResult = {
       url, finalUrl: null, scannedAt: new Date().toISOString(), status: null,
-      responseTimeMs: null, xRobotsTag: [], contentType: null, metadata: null, error: null,
+      responseTimeMs: null, xRobotsTag: [], metadata: null, error: null,
     };
     try {
  await this.acquire(settings.concurrency, settings.timeoutMs, signal); 
@@ -110,11 +110,11 @@ result.finalUrl = response.url;
       }
       const header = (key: string): string[] => Object.entries(response.headers).filter(([name]) => name.toLowerCase() === key).flatMap(([, value]) => Array.isArray(value) ? value.filter(v => typeof v === 'string') : typeof value === 'string' ? [value] : []);
       result.xRobotsTag = header('x-robots-tag').map(fieldValue);
-      result.contentType = header('content-type').join(', ') || null;
-      const mime = result.contentType?.split(';')[0]?.trim().toLowerCase();
+      const contentType = header('content-type').join(', ') || null;
+      const mime = contentType?.split(';')[0]?.trim().toLowerCase();
       const isHtml = mime ? mime === 'text/html' || mime === 'application/xhtml+xml' : /^\s*(?:<!doctype\s+html|<html\b|<head\b|<title\b|<meta\b|<body\b|<h1\b|<!--)/i.test(response.text);
       if (!isHtml) {
-result.error = { kind: 'non-html', message: result.contentType ?? 'Response is not recognizable HTML' };
+result.error = { kind: 'non-html', message: contentType ?? 'Response is not recognizable HTML' };
 } else {
         try {
  result.metadata = parseHtml(response.text); 

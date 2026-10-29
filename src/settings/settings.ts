@@ -13,7 +13,7 @@ export function cleanSettings(raw: unknown): AuditSettings {
     concurrency: bounded(s.concurrency, 3, 1, 20),
     timeoutMs: bounded(s.timeoutMs, 30000, 1000, 300000),
     language: s.language === 'en' || s.language === 'uk' ? s.language : 'auto',
-    visibleColumns: Array.isArray(s.visibleColumns) && s.visibleColumns.every(x => typeof x === 'string') ? s.visibleColumns : [...defaultSettings.visibleColumns],
+    visibleColumns: Array.isArray(s.visibleColumns) && s.visibleColumns.every(x => typeof x === 'string') ? s.visibleColumns.filter(column => column !== 'contentType') : [...defaultSettings.visibleColumns],
   };
 }
 

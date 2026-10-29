@@ -13,7 +13,7 @@ export const en = {
   unknown: 'Unavailable', never: 'Never', details: 'Page details', close: 'Close details',
   select: 'Select page', selectPage: 'Select visible page', previous: 'Previous', next: 'Next', page: 'Page',
   of: 'of', pages: 'pages', value: 'Original value', length: 'Characters',
-  error: 'Error', contentType: 'Content type', noDetails: 'Select a row to inspect all metadata.',
+  error: 'Error', noDetails: 'Select a row to inspect all metadata.',
   idle: 'Ready', running: 'Scanning', completed: 'completed', active: 'active',
   settings: 'SEO Audit settings', property: 'Frontmatter URL property',
   propertyHelp: 'Top-level YAML property containing an HTTP(S) URL or a list of URLs. Default: url.',
