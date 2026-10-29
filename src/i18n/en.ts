@@ -1,4 +1,5 @@
 export const en = {
+  filters: 'Filters', presence: 'Value presence',
   pageSize: 'Rows per page',
   scanPage: 'Scan page', refreshPage: 'Refresh page data', scanBusy: 'Scan in progress',
   unscannedHelp: 'Use the scan button above to fetch this page’s SEO metadata.',

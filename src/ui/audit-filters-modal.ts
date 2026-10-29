@@ -1,0 +1,92 @@
+import { Modal, type App } from 'obsidian';
+import type { AuditController } from './audit-controller';
+import type { TableFilter } from './audit-table';
+import { fieldKeys } from '../types';
+import { el, select } from './dom';
+
+/** Edits the current table filter without resetting it when the popup closes. */
+export class AuditFiltersModal extends Modal {
+  private unsubscribe: (() => void) | null = null;
+  private searchTimer: number | undefined;
+  private locale = '';
+  private statusFilter!: HTMLSelectElement;
+  private statusSignature = '';
+
+  constructor(app: App, private controller: AuditController, private filter: TableFilter, private changed: () => void) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.render();
+    this.unsubscribe = this.controller.subscribe(() => {
+      if (this.locale !== this.controller.t('open')) {
+        this.render();
+      } else {
+        this.refreshStatuses();
+      }
+    });
+  }
+
+  private render(): void {
+    const t = this.controller.t;
+    this.locale = t('open');
+    this.setTitle(t('filters'));
+    this.contentEl.classList.add('seo-audit', 'seo-audit-filters');
+    this.contentEl.replaceChildren();
+    const search = el(this.contentEl, 'input');
+    search.type = 'search'; search.placeholder = t('search'); search.setAttribute('aria-label', t('search'));
+    search.value = this.filter.search;
+    search.oninput = () => {
+      this.filter.search = search.value;
+      window.clearTimeout(this.searchTimer);
+      this.searchTimer = window.setTimeout(() => {
+        this.searchTimer = undefined;
+        this.changed();
+      }, 200);
+    };
+    this.statusFilter = select(this.contentEl, t('status'), [], this.filter.status, value => {
+      this.filter.status = value;
+      this.changed();
+    });
+    this.statusSignature = '';
+    this.refreshStatuses();
+    select(this.contentEl, t('metadataFilter'), fieldKeys.map(key => [key, key]), this.filter.field, value => {
+      this.filter.field = value as TableFilter['field'];
+      this.changed();
+    });
+    select(this.contentEl, t('presence'), [['any', t('any')], ['present', t('present')], ['missing', t('missing')]], this.filter.presence, value => {
+      this.filter.presence = value;
+      this.changed();
+    });
+  }
+
+  private refreshStatuses(): void {
+    const t = this.controller.t;
+    const statuses = [...new Set(Object.values(this.controller.data.cache.latest).flatMap(result => result.status === null ? [] : [result.status]))].sort((a, b) => a - b);
+    const signature = JSON.stringify([statuses, this.filter.status]);
+    if (signature === this.statusSignature) {
+      return;
+    }
+    this.statusSignature = signature;
+    const options: [string, string][] = [['any', t('any')], ['unscanned', t('unscanned')], ['errors', t('errors')], ...['1xx', '2xx', '3xx', '4xx', '5xx'].map(value => [value, value] as [string, string]), ...statuses.map(value => [String(value), String(value)] as [string, string])];
+    if (!options.some(([value]) => value === this.filter.status)) {
+      options.push([this.filter.status, this.filter.status]);
+    }
+    this.statusFilter.replaceChildren();
+    for (const [value, label] of options) {
+      el(this.statusFilter, 'option', label).value = value;
+    }
+    this.statusFilter.value = this.filter.status;
+  }
+
+  onClose(): void {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    if (this.searchTimer !== undefined) {
+      window.clearTimeout(this.searchTimer);
+      this.searchTimer = undefined;
+      this.changed();
+    }
+    this.contentEl.replaceChildren();
+  }
+}

@@ -1,9 +1,10 @@
 .seo-audit { padding: 16px; overflow: auto; }
 /* Keep initial spacing outside the scrollport inset used by sticky headers. */
 .seo-audit.seo-audit-main { padding-top: 0; container-type: inline-size; }
-.seo-audit-main > .seo-audit-toolbar:first-child { margin-top: 16px; }
 .seo-audit .seo-audit-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
-.seo-audit .seo-audit-toolbar input[type="search"] { flex: 1 1 260px; }
+.seo-audit-filters > input[type="search"] { width: 100%; margin-bottom: 16px; }
+.seo-audit.seo-audit-filters .seo-audit-control { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.seo-audit-filters .seo-audit-control select { min-width: 0; max-width: 60%; }
 .seo-audit .seo-audit-control { display: inline-flex; align-items: center; gap: 6px; }
 .seo-audit .seo-audit-column-choices { list-style: none; margin: 0; padding: 0; }
 .seo-audit .seo-audit-table-preferences .seo-audit-control { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--background-modifier-border); }
@@ -25,6 +26,10 @@
 .seo-audit .seo-audit-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: 6px; background: var(--background-secondary); }
 /* Match the view width while the containing block spans the entire table. */
 .seo-audit-main .seo-audit-pagination { position: sticky; left: 0; width: 100cqw; box-sizing: border-box; }
+.seo-audit-main .seo-audit-table-controls { position: sticky; left: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100cqw; box-sizing: border-box; margin: 16px 0 12px; }
+.seo-audit .seo-audit-table-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.seo-audit .seo-audit-filter-button { padding: 8px; height: auto; }
+.seo-audit .seo-audit-table-controls .seo-audit-pagination { position: static; width: auto; min-width: 0; flex: 1; margin: 0; }
 .seo-audit .seo-audit-page-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; text-align: center; font-size: var(--font-ui-small); }
 .seo-audit .seo-audit-page-count { color: var(--text-muted); }
 .seo-audit .seo-audit-url { display: flex; align-items: flex-start; gap: 6px; }
@@ -92,6 +97,6 @@
 .seo-audit .seo-audit-values th:last-child, .seo-audit .seo-audit-values td:last-child { width: 130px; }
 @media (max-width: 600px) {
   .seo-audit { padding: 8px; }
-  .seo-audit-main > .seo-audit-toolbar:first-child { margin-top: 8px; }
+  .seo-audit-main .seo-audit-table-controls { margin-top: 8px; }
   .seo-audit .seo-audit-details dl { grid-template-columns: 1fr; }
 }

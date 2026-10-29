@@ -1,10 +1,10 @@
-import { ItemView, Notice, type Menu, type WorkspaceLeaf } from 'obsidian';
+import { ItemView, Notice, setIcon, setTooltip, type Menu, type WorkspaceLeaf } from 'obsidian';
 import type { AuditController } from './audit-controller';
-import { renderAuditTable, type AuditTableState, type TableFilter } from './audit-table';
+import { renderAuditTable, type AuditTableState } from './audit-table';
 import { TableSettingsModal } from './table-settings-modal';
-import { fieldKeys } from '../types';
+import { AuditFiltersModal } from './audit-filters-modal';
 import { download, exportCsv, exportJson } from '../export/export-service';
-import { el, select } from './dom';
+import { button, el } from './dom';
 import type { AuditResult } from '../types';
 
 export const VIEW_TYPE = 'seo-audit';
@@ -14,14 +14,13 @@ export class AuditView extends ItemView {
     filter: { search: '', status: 'any', field: 'title', presence: 'any', sort: 'url', descending: false },
   };
   private tableHost!: HTMLElement;
+  private tableActions!: HTMLElement;
   private selectionHost!: HTMLElement;
+  private filtersModal: AuditFiltersModal | null = null;
   private settingsModal: TableSettingsModal | null = null;
   private unsubscribe: (() => void) | null = null;
   private renderTimer: number | undefined;
-  private searchTimer: number | undefined;
   private lastLocale = '';
-  private statusFilter!: HTMLSelectElement;
-  private statusOptions = '';
   private tableSignature = '';
   private tableResults: (AuditResult | undefined)[] = [];
   private scannedSelection = new Set<string>();
@@ -97,7 +96,8 @@ this.refresh();
   }
   async onClose(): Promise<void> {
     this.settingsModal?.close();
-    this.unsubscribe?.(); window.clearTimeout(this.renderTimer); window.clearTimeout(this.searchTimer);
+    this.filtersModal?.close();
+    this.unsubscribe?.(); window.clearTimeout(this.renderTimer);
   }
   private scanPages(urls: string[]): void {
     if (this.plugin.scanner.progress.running) {
@@ -107,28 +107,23 @@ this.refresh();
     this.plugin.scan(urls);
   }
   private build(): void {
-    window.clearTimeout(this.searchTimer);
     const t = this.plugin.t;
     this.lastLocale = t('open');
     this.contentEl.replaceChildren();
     this.tableSignature = '';
-    const filters = el(this.contentEl, 'div', undefined, 'seo-audit-toolbar');
-    const search = el(filters, 'input'); search.type = 'search'; search.placeholder = t('search'); search.setAttribute('aria-label', t('search')); search.value = this.tableState.filter.search;
-    search.oninput = () => {
- window.clearTimeout(this.searchTimer); this.searchTimer = window.setTimeout(() => {
- this.tableState.filter.search = search.value; this.tableState.page = 0; this.renderTable(); 
-}, 200); 
-};
-    this.statusOptions = '';
-    this.statusFilter = select(filters, t('status'), [], this.tableState.filter.status, value => {
- this.tableState.filter.status = value; this.tableState.page = 0; this.renderTable(); 
-});
-    select(filters, t('metadataFilter'), fieldKeys.map(k => [k, k]), this.tableState.filter.field, value => {
- this.tableState.filter.field = value as TableFilter['field']; this.tableState.page = 0; this.renderTable(); 
-});
-    select(filters, '', [['any', t('any')], ['present', t('present')], ['missing', t('missing')]], this.tableState.filter.presence, value => {
- this.tableState.filter.presence = value; this.tableState.page = 0; this.renderTable(); 
-}).setAttribute('aria-label', t('metadataFilter'));
+    const filters = this.tableActions = el(this.contentEl, 'div', undefined, 'seo-audit-table-actions');
+    const filterButton = button(filters, '', () => {
+      this.filtersModal?.close();
+      this.filtersModal = new AuditFiltersModal(this.app, this.plugin, this.tableState.filter, () => {
+        this.tableState.page = 0;
+        this.renderTable();
+      });
+      this.filtersModal.open();
+    });
+    filterButton.classList.add('clickable-icon', 'seo-audit-filter-button');
+    filterButton.setAttribute('aria-label', t('filters'));
+    setIcon(filterButton, 'list-filter');
+    setTooltip(filterButton, t('filters'));
     this.selectionHost = el(filters, 'span', undefined, 'seo-audit-selection-count');
     this.selectionHost.setAttribute('role', 'status');
     this.tableHost = el(this.contentEl, 'div', undefined, 'seo-audit-table-host');
@@ -142,20 +137,6 @@ this.tableState.selected.delete(url);
 }
 }
     const t = this.plugin.t;
-    const statuses = [...new Set(Object.values(this.plugin.data.cache.latest).flatMap(r => r.status === null ? [] : [r.status]))].sort((a, b) => a - b);
-    const signature = JSON.stringify([statuses, this.tableState.filter.status]);
-    if (signature !== this.statusOptions) {
-      this.statusOptions = signature;
-      this.statusFilter.replaceChildren();
-      const options: [string, string][] = [['any', t('any')], ['unscanned', t('unscanned')], ['errors', t('errors')], ...['1xx', '2xx', '3xx', '4xx', '5xx'].map(s => [s, s] as [string, string]), ...statuses.map(s => [String(s), String(s)] as [string, string])];
-      if (!options.some(([value]) => value === this.tableState.filter.status)) {
-options.push([this.tableState.filter.status, this.tableState.filter.status]);
-}
-      for (const [value, label] of options) {
- const option = el(this.statusFilter, 'option', label); option.value = value; 
-}
-      this.statusFilter.value = this.tableState.filter.status;
-    }
     this.selectionHost.hidden = this.tableState.selected.size === 0;
     this.selectionHost.textContent = `${this.tableState.selected.size} ${t('selectedCount')}`;
     this.renderTable(false);
@@ -179,6 +160,7 @@ void this.app.workspace.getLeaf(true).openFile(file);
       return;
     }
     renderAuditTable(this.tableHost, this.plugin, this.tableState, {
+      toolbar: this.tableActions,
       render: () => this.renderTable(), details: () => {
         if (this.tableState.focused) {
           this.plugin.openDetails(this.tableState.focused);

@@ -78,6 +78,7 @@ export interface AuditTableState {
   pageSize: number;
 }
 export interface AuditTableActions {
+  toolbar: HTMLElement;
   render: () => void;
   details: () => void;
   refresh: () => void;
@@ -98,8 +99,12 @@ export function renderAuditTable(host: HTMLElement, controller: AuditController,
 child.remove();
 }
   }
-  const renderPagination = (): void => {
-    const nav = el(host, 'nav', undefined, 'seo-audit-pagination');
+  const renderPagination = (top = false): void => {
+    const parent = top ? el(host, 'div', undefined, 'seo-audit-table-controls') : host;
+    if (top) {
+      parent.appendChild(actions.toolbar);
+    }
+    const nav = el(parent, 'nav', undefined, 'seo-audit-pagination');
     nav.setAttribute('aria-label', t('pagination'));
     button(nav, t('previous'), () => {
  state.page--; actions.render(); 
@@ -111,7 +116,7 @@ child.remove();
  state.page++; actions.render(); 
 }).disabled = (state.page + 1) * state.pageSize >= pages.length;
   };
-  renderPagination();
+  renderPagination(true);
   if (!pages.length) {
  existingWrap?.remove(); el(host, 'p', t('empty')); return; 
 }

@@ -12,6 +12,10 @@ function menuFor(view: AuditView) {
   const menu = new Menu(); view.onPaneMenu(menu, 'more-options');
   return menu as unknown as MockMenu;
 }
+function openFilters(view: AuditView): HTMLElement {
+  view.contentEl.querySelector<HTMLButtonElement>('.seo-audit-filter-button')!.click();
+  return document.querySelector<HTMLElement>('.seo-audit-filters')!;
+}
 afterEach(() => { vi.useRealTimers(); document.body.replaceChildren(); });
 async function setup(count = 2) {
   const listeners = new Set<() => void>();
@@ -62,7 +66,7 @@ it('renders details as safe text with duplicates, all H1/alternates and lengths;
 });
 it('debounces search, saves column choices and updates exact status options after scans', async () => {
   vi.useFakeTimers(); const s = await setup();
-  const input = s.view.contentEl.querySelector<HTMLInputElement>('input[type="search"]')!;
+  const input = openFilters(s.view).querySelector<HTMLInputElement>('input[type="search"]')!;
   input.value = 'page1'; input.dispatchEvent(new Event('input')); await vi.advanceTimersByTimeAsync(201);
   expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(1);
   expect(s.view.contentEl.querySelector('.seo-audit-column-choices')).toBeNull();
@@ -72,7 +76,7 @@ it('debounces search, saves column choices and updates exact status options afte
   expect(s.data.settings.visibleColumns).toContain('url');
   s.data.cache.latest['https://page1.test'] = { url: 'https://page1.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 503, responseTimeMs: 1, xRobotsTag: [], error: { kind: 'http', message: 'HTTP 503' }, metadata: null };
   s.notify(); await vi.advanceTimersByTimeAsync(151);
-  expect(Array.from(s.view.contentEl.querySelectorAll('select[aria-label="HTTP status"] option')).map(o => o.textContent)).toContain('503');
+  expect(Array.from(document.querySelectorAll('select[aria-label="HTTP status"] option')).map(o => o.textContent)).toContain('503');
   await s.view.onClose();
 });
 it('opens literal filenames containing # and skips sources deleted since rendering', async () => {
@@ -251,7 +255,7 @@ it('shows comma-separated language codes with URL tooltips and keeps alternate U
   expect(codes[0]!.parentElement!.textContent).toBe('de, uk');
   expect(codes[0]!.dataset.tooltip).toBe('https://example.test/de\nhttps://example.test/de/other');
   expect(codes[1]!.dataset.tooltip).toBe('https://example.test/uk');
-  const search = s.view.contentEl.querySelector<HTMLInputElement>('input[type="search"]')!;
+  const search = openFilters(s.view).querySelector<HTMLInputElement>('input[type="search"]')!;
   search.value = 'example.test/de/other'; search.dispatchEvent(new Event('input'));
   await vi.advanceTimersByTimeAsync(201);
   expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(1);
@@ -318,4 +322,28 @@ it('keeps selected pages when a scan is stopped before completion', async () => 
   expect(s.view.contentEl.querySelector<HTMLInputElement>('tbody input')!.checked).toBe(true);
   await s.detailsView.onClose();
   await s.view.onClose();
+});
+
+it('opens filters in a popup, preserves choices on reopening and applies pending search on close', async () => {
+  vi.useFakeTimers();
+  const s = await setup(120);
+  expect(s.view.contentEl.querySelector('input[type="search"], select')).toBeNull();
+  s.view.contentEl.querySelector('.seo-audit-pagination')!.querySelectorAll('button')[1]!.click();
+  const popup = openFilters(s.view);
+  const status = popup.querySelector<HTMLSelectElement>('select[aria-label="HTTP status"]')!;
+  status.value = 'unscanned'; status.dispatchEvent(new Event('change'));
+  expect(s.view.contentEl.querySelector('.seo-audit-pagination')!.textContent).toContain('Page 1 of 3');
+  const search = popup.querySelector<HTMLInputElement>('input[type="search"]')!;
+  search.value = 'page119'; search.dispatchEvent(new Event('input'));
+  const reopened = openFilters(s.view);
+  expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(1);
+  expect(reopened.querySelector<HTMLInputElement>('input[type="search"]')!.value).toBe('page119');
+  expect(reopened.querySelector<HTMLSelectElement>('select[aria-label="HTTP status"]')!.value).toBe('unscanned');
+  s.plugin.t = translator('uk', 'en');
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(reopened.getAttribute('aria-label')).toBe('Фільтри');
+  expect(reopened.querySelector('select[aria-label="HTTP-статус"]')).not.toBeNull();
+  await s.detailsView.onClose();
+  await s.view.onClose();
+  expect(document.querySelector('.seo-audit-filters')).toBeNull();
 });
