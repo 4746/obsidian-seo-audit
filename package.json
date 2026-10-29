@@ -1,0 +1,24 @@
+{
+  "name": "obsidian-seo-audit",
+  "version": "1.0.0",
+  "description": "Audit SEO metadata for URLs in your Obsidian vault.",
+  "homepage": "https://github.com/4746/obsidian-seo-audit",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && node esbuild.config.mjs production",
+    "test": "vitest run"
+  },
+  "license": "MIT",
+  "engines": { "node": "^22.12.0 || ^24.0.0 || >=26.0.0" },
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "esbuild": "^0.28.2",
+    "jsdom": "^26.1.0",
+    "obsidian": "latest",
+    "typescript": "^5.8.3",
+    "vitest": "^5.0.5"
+  }
+}
