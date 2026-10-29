@@ -4,6 +4,7 @@ export const uk: Record<Message, string> = {
   pluginName: 'SEO Audit', english: 'English', ukrainian: 'Українська',
   open: 'Відкрити SEO Audit', all: 'Перевірити всі', selected: 'Перевірити вибрані', stop: 'Зупинити', search: 'Пошук за URL, файлами та метаданими…',
   status: 'HTTP-статус', any: 'Усі', unscanned: 'Не перевірено', errors: 'Помилки', present: 'Є значення', missing: 'Відсутнє',
+  tableSettings: 'Налаштування',
   metadataFilter: 'Фільтр метаданих', columns: 'Стовпці', exportJson: 'Експорт JSON', exportCsv: 'Експорт CSV',
   files: 'Вихідні файли', url: 'URL', finalUrl: 'Кінцевий URL', responseTimeMs: 'Час HTTP-відповіді (мс)', scannedAt: 'Остання перевірка',
   h1Count: 'Кількість H1', h1: 'Заголовки H1', alternates: 'Мовні альтернативи', xRobotsTag: 'X-Robots-Tag',

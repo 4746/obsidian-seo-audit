@@ -1,33 +1,38 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import type { WorkspaceLeaf } from 'obsidian';
+import { Menu, type WorkspaceLeaf } from 'obsidian';
+import { Menu as MockMenu } from './obsidian-mock';
 import { AuditView } from '../src/ui/audit-view';
 import { loadData } from '../src/storage/audit-storage';
 import { UrlIndex } from '../src/indexer/url-indexer';
 import { translator } from '../src/i18n';
 import { parseHtml } from '../src/parser/html-parser';
 
+function menuFor(view: AuditView) {
+  const menu = new Menu(); view.onPaneMenu(menu, 'more-options');
+  return menu as unknown as MockMenu;
+}
 afterEach(() => { vi.useRealTimers(); document.body.replaceChildren(); });
 async function setup(count = 2) {
-  let listener = () => undefined as void;
+  const listeners = new Set<() => void>();
   const data = loadData(null); const index = new UrlIndex();
   for (let i = 0; i < count; i++) index.update(`${i}.md`, `https://page${i}.test`);
   index.update('duplicate.md', 'https://page0.test');
   const scan = vi.fn(); const scheduleSave = vi.fn(); const openLinkText = vi.fn(); const openFile = vi.fn();
   const getFileByPath = vi.fn((path: string) => ({ path }));
   const plugin = { data, index, scan, scheduleSave, t: translator('en', 'en'), scanner: { progress: { running: false, total: 0, active: 0, completed: 0 }, stop: vi.fn() },
-    subscribe: (callback: () => void) => { listener = callback; return () => { listener = () => undefined; }; }, reindex: vi.fn() };
+    subscribe: (callback: () => void) => { listeners.add(callback); return () => { listeners.delete(callback); }; }, reindex: vi.fn() };
   const view = new AuditView({ app: { vault: { getFileByPath }, workspace: { openLinkText, getLeaf: () => ({ openFile }) } } } as unknown as WorkspaceLeaf, plugin);
   await view.onOpen(); document.body.appendChild(view.contentEl);
-  return { view, plugin, data, scan, scheduleSave, openLinkText, openFile, getFileByPath, notify: () => listener() };
+  return { view, plugin, data, scan, scheduleSave, openLinkText, openFile, getFileByPath, notify: () => { for (const listener of listeners) listener(); } };
 }
 it('paginates large indices and scans all/selected unique URLs', async () => {
   const s = await setup(120);
   expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(50);
-  const all = Array.from(s.view.contentEl.querySelectorAll('button')).find(b => b.textContent === 'Scan all')!;
-  all.click(); expect(s.scan.mock.calls[0]?.[0]).toHaveLength(120);
+  const all = menuFor(s.view).items.find(item => item.title === 'Scan all')!;
+  all.action(); expect(s.scan.mock.calls[0]?.[0]).toHaveLength(120);
   const check = s.view.contentEl.querySelector<HTMLInputElement>('tbody input')!; check.click();
-  const selected = Array.from(s.view.contentEl.querySelectorAll('button')).find(b => b.textContent === 'Scan selected')!;
-  selected.click(); expect(s.scan.mock.calls[1]?.[0]).toHaveLength(1);
+  const selected = menuFor(s.view).items.find(item => item.title === 'Scan selected')!;
+  selected.action(); expect(s.scan.mock.calls[1]?.[0]).toHaveLength(1);
   await s.view.onClose();
 });
 it('renders details as safe text with duplicates, all H1/alternates and lengths; opens all source files', async () => {
@@ -48,7 +53,9 @@ it('debounces search, saves column choices and updates exact status options afte
   const input = s.view.contentEl.querySelector<HTMLInputElement>('input[type="search"]')!;
   input.value = 'page1'; input.dispatchEvent(new Event('input')); await vi.advanceTimersByTimeAsync(201);
   expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(1);
-  const column = s.view.contentEl.querySelector<HTMLInputElement>('.seo-audit-column-choices input')!;
+  expect(s.view.contentEl.querySelector('.seo-audit-column-choices')).toBeNull();
+  menuFor(s.view).items.find(item => item.title === 'Settings')!.action();
+  const column = document.querySelector<HTMLInputElement>('.seo-audit-column-choices input')!;
   column.click(); expect(s.scheduleSave).toHaveBeenCalled(); expect(s.data.settings.visibleColumns).not.toContain('url');
   s.data.cache.latest['https://page1.test'] = { url: 'https://page1.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 503, responseTimeMs: 1, xRobotsTag: [], contentType: null, error: { kind: 'http', message: 'HTTP 503' }, metadata: null };
   s.notify(); await vi.advanceTimersByTimeAsync(151);
@@ -65,4 +72,23 @@ it('opens literal filenames containing # and skips sources deleted since renderi
   s.getFileByPath.mockReturnValueOnce(null as unknown as { path: string });
   source.click(); expect(s.openFile).toHaveBeenCalledTimes(1); expect(s.openLinkText).not.toHaveBeenCalled();
   await s.view.onClose();
+});
+
+it('disables unavailable scan actions in the pane menu', async () => {
+  const s = await setup();
+  const disabled = (title: string) => menuFor(s.view).items.find(item => item.title === title)!.disabled;
+  expect(disabled('Scan all')).toBe(false);
+  expect(disabled('Scan selected')).toBe(true);
+  expect(disabled('Stop')).toBe(true);
+  s.plugin.scanner.progress.running = true;
+  expect(disabled('Scan all')).toBe(true);
+  expect(disabled('Scan selected')).toBe(true);
+  expect(disabled('Stop')).toBe(false);
+  menuFor(s.view).items.find(item => item.title === 'Stop')!.action();
+  expect(s.plugin.scanner.stop).toHaveBeenCalledOnce();
+  expect(Array.from(s.view.contentEl.querySelectorAll('button')).map(button => button.textContent)).not.toContain('Scan all');
+  menuFor(s.view).items.find(item => item.title === 'Settings')!.action();
+  expect(document.querySelector('.seo-audit-column-choices')).not.toBeNull();
+  await s.view.onClose();
+  expect(document.querySelector('.seo-audit-column-choices')).toBeNull();
 });

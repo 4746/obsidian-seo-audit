@@ -2,9 +2,12 @@
 .seo-audit .seo-audit-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
 .seo-audit .seo-audit-toolbar input[type="search"] { flex: 1 1 260px; }
 .seo-audit .seo-audit-control { display: inline-flex; align-items: center; gap: 6px; }
-.seo-audit .seo-audit-columns { margin-bottom: 12px; }
-.seo-audit .seo-audit-column-choices { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 0; }
-.seo-audit .seo-audit-column-choices label { display: inline-flex; align-items: center; gap: 4px; }
+.seo-audit .seo-audit-column-choices { list-style: none; margin: 0; padding: 0; }
+.seo-audit .seo-audit-column-choices li { margin: 0; padding: 0; border-bottom: 1px solid var(--background-modifier-border); }
+.seo-audit .seo-audit-column-choices label { display: flex; align-items: center; gap: 12px; padding: 12px 8px; cursor: pointer; }
+.seo-audit .seo-audit-column-choices label:hover { background: var(--background-modifier-hover); }
+.seo-audit .seo-audit-column-choices input { flex-shrink: 0; margin: 0; }
+.seo-audit .seo-audit-column-choices span { min-width: 0; overflow-wrap: anywhere; }
 .seo-audit .seo-audit-progress { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; color: var(--text-muted); }
 .seo-audit .seo-audit-progress progress { max-width: 200px; accent-color: var(--interactive-accent); }
 .seo-audit .seo-audit-table-scroll { overflow: auto; max-height: 60vh; border: 1px solid var(--background-modifier-border); border-radius: 6px; }
