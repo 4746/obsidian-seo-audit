@@ -99,7 +99,7 @@ void this.storage.flush();
       }
       let leaf = this.app.workspace.getLeavesOfType(DETAILS_VIEW_TYPE)[0];
       if (!leaf) {
-        leaf = this.app.workspace.getRightLeaf(true) ?? undefined;
+        leaf = this.app.workspace.getRightLeaf(false) ?? undefined;
         if (!leaf) {
           return;
         }
