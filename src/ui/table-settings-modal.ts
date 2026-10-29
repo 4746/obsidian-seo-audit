@@ -1,4 +1,4 @@
-import { Modal, type App } from 'obsidian';
+import { Modal, ToggleComponent, type App } from 'obsidian';
 import type { AuditController } from './audit-controller';
 import { columns, columnLabel } from './audit-table';
 import { el, select } from './dom';
@@ -38,6 +38,14 @@ this.render();
       this.plugin.scheduleSave();
       this.renderTable();
     });
+    const highlightRow = el(pagination, 'div', undefined, 'seo-audit-highlight-setting');
+    el(highlightRow, 'span', t('highlightIssues'));
+    const toggle = new ToggleComponent(highlightRow).setValue(this.plugin.data.settings.highlightIssues).onChange(value => {
+      this.plugin.data.settings.highlightIssues = value;
+      this.plugin.scheduleSave();
+      this.renderTable();
+    });
+    toggle.toggleEl.setAttribute('aria-label', t('highlightIssues'));
     el(this.contentEl, 'h3', t('columns'));
     const choices = el(this.contentEl, 'ul', undefined, 'seo-audit-column-choices');
     for (const column of columns.filter(column => column !== 'url')) {

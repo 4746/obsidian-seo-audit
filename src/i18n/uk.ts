@@ -1,6 +1,9 @@
 import type { Message } from './en';
 
 export const uk: Record<Message, string> = {
+  highlightIssues: 'Підсвічувати помилки й попередження',
+  lengthRules: 'Правила кількості символів', recommendedLength: 'Рекомендована довжина (символів)',
+  lengthRulesHelp: 'Налаштовувані пороги плагіна. Перевищення позначається як помилка. Google не встановлює фіксованих меж символів; ці значення не прогнозують обрізання тексту.',
   clear: 'Очистити фільтр',
   filters: 'Фільтри', presence: 'Наявність значення',
   pageSize: 'Записів на сторінці',

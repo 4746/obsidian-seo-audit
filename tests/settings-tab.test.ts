@@ -19,8 +19,8 @@ function setup() {
     scheduleSave: vi.fn(), reindex: vi.fn(), notify: vi.fn(),
   };
   const tab = new AuditSettingTab({} as App, plugin as unknown as SeoAuditPlugin);
-  const definitions = () => (tab.getSettingDefinitions()[0] as SettingDefinitionGroup).items as SettingDefinitionRender[];
-  function control(index: number) {
+  const definitions = (group = 0) => (tab.getSettingDefinitions()[group] as SettingDefinitionGroup).items as SettingDefinitionRender[];
+  function control(index: number, group = 0) {
     let change = (_value: string) => {};
     const input = {
       inputEl: document.createElement('input'),
@@ -33,7 +33,7 @@ function setup() {
       addText: (build: (text: typeof input) => void) => build(input),
       addDropdown: (build: (dropdown: typeof input) => void) => build(input),
     };
-    definitions()[index]!.render(setting as unknown as Setting, {} as SettingGroup);
+    definitions(group)[index]!.render(setting as unknown as Setting, {} as SettingGroup);
     return { input, change: (value: string) => change(value) };
   }
   return { data, plugin, tab, definitions, control };
@@ -79,4 +79,18 @@ it('saves language, notifies views and updates translated definitions', () => {
   expect(s.tab.update).toHaveBeenCalledOnce();
   s.control(3).change('unsupported');
   expect(s.data.settings.language).toBe('auto');
+});
+
+it('defines seven independent length rules and saves valid thresholds while notifying views', () => {
+  const s = setup();
+  expect(s.definitions(1).slice(1).map(def => def.name)).toEqual(['title', 'description', 'og:title', 'og:description', 'twitter:title', 'twitter:description', 'h1']);
+  const title = s.control(1, 1);
+  expect(title.input.value).toBe('60');
+  for (const invalid of ['', ' ', '0', '-1', '1.5', 'Infinity', 'invalid']) title.change(invalid);
+  expect(s.plugin.scheduleSave).not.toHaveBeenCalled();
+  title.change('70');
+  expect(s.data.settings.lengthLimits.title).toBe(70);
+  expect(s.data.settings.lengthLimits.description).toBe(160);
+  expect(s.plugin.scheduleSave).toHaveBeenCalledOnce();
+  expect(s.plugin.notify).toHaveBeenCalledOnce();
 });

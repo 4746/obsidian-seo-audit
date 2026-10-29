@@ -154,7 +154,7 @@ void this.app.workspace.getLeaf(true).openFile(file);
     }
     const pages = this.plugin.index.pages();
     const results = pages.map(page => this.plugin.data.cache.latest[page.url]);
-    const signature = JSON.stringify([pages, this.plugin.data.settings.urlProperty, this.plugin.data.settings.visibleColumns, this.tableState.filter, this.tableState.page, this.tableState.pageSize, [...this.tableState.selected], this.tableState.focused]);
+    const signature = JSON.stringify([pages, this.plugin.data.settings.urlProperty, this.plugin.data.settings.visibleColumns, this.plugin.data.settings.lengthLimits, this.plugin.data.settings.highlightIssues, this.tableState.filter, this.tableState.page, this.tableState.pageSize, [...this.tableState.selected], this.tableState.focused]);
     // Progress-only notifications must not interrupt native scrolling or mouse gestures.
     if (!force && signature === this.tableSignature && results.length === this.tableResults.length && results.every((result, index) => result === this.tableResults[index])) {
       return;

@@ -7,6 +7,7 @@ import { loadData } from '../src/storage/audit-storage';
 import { UrlIndex } from '../src/indexer/url-indexer';
 import { translator } from '../src/i18n';
 import { parseHtml } from '../src/parser/html-parser';
+import { lengthFields } from '../src/types';
 
 function menuFor(view: AuditView) {
   const menu = new Menu(); view.onPaneMenu(menu, 'more-options');
@@ -375,6 +376,55 @@ it('clears filters and pending search while keeping table sorting', async () => 
   await vi.advanceTimersByTimeAsync(201);
   expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(50);
   expect(s.view.contentEl.querySelector('.seo-audit-pagination')!.textContent).toContain('Page 1 of 3');
+  await s.detailsView.onClose();
+  await s.view.onClose();
+});
+
+it('highlights each overlong field and updates table and detail counts when thresholds change', async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  s.data.settings.visibleColumns = [...lengthFields];
+  for (const field of lengthFields) s.data.settings.lengthLimits[field] = 5;
+  const html = '<title>12345</title><title>😀😀😀😀😀😀</title><h1>😀😀😀😀😀😀</h1>' + lengthFields.filter(field => field !== 'title' && field !== 'h1').map(field => `<meta name="${field}" content="😀😀😀😀😀😀">`).join('');
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], error: null, metadata: parseHtml(html) };
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(s.view.contentEl.querySelectorAll('td.seo-audit-length-error')).toHaveLength(lengthFields.length);
+  s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!.click();
+  const details = s.detailsView.contentEl;
+  expect(details.querySelectorAll('.seo-audit-detail-value.seo-audit-length-error')).toHaveLength(lengthFields.length);
+  expect(details.textContent).toContain('Characters: 6 / 5');
+  expect(details.querySelector('.seo-audit-detail-value:not(.seo-audit-length-error)')!.textContent).toContain('Characters: 5 / 5');
+  for (const field of lengthFields) s.data.settings.lengthLimits[field] = 6;
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(s.view.contentEl.querySelectorAll('td.seo-audit-length-error')).toHaveLength(0);
+  expect(details.querySelectorAll('.seo-audit-length-error')).toHaveLength(0);
+  expect(details.textContent).toContain('Characters: 6 / 6');
+  expect(s.scan).not.toHaveBeenCalled();
+  await s.detailsView.onClose();
+  await s.view.onClose();
+});
+
+it('toggles table issue highlights without changing values or sidebar highlights', async () => {
+  vi.useFakeTimers();
+  const s = await setup();
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 404, responseTimeMs: 1, xRobotsTag: [], error: { kind: 'http', message: 'HTTP 404' }, metadata: parseHtml(`<title>${'x'.repeat(61)}</title>`) };
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!.click();
+  expect(s.view.contentEl.querySelector('.seo-audit-length-error')).not.toBeNull();
+  expect(s.view.contentEl.querySelector('.seo-audit-error-row')).not.toBeNull();
+  menuFor(s.view).items.find(item => item.title === 'Settings')!.action();
+  const toggle = document.querySelector<HTMLButtonElement>('[aria-label="Highlight errors and warnings"]')!;
+  expect(toggle.getAttribute('aria-checked')).toBe('true');
+  toggle.click();
+  expect(s.data.settings.highlightIssues).toBe(false);
+  expect(s.view.contentEl.querySelector('.seo-audit-length-error, .seo-audit-error-row, .seo-audit-error, .seo-audit-missing')).toBeNull();
+  expect(s.view.contentEl.textContent).toContain('404');
+  expect(s.detailsView.contentEl.querySelector('.seo-audit-length-error')).not.toBeNull();
+  expect(loadData(JSON.parse(JSON.stringify(s.data))).settings.highlightIssues).toBe(false);
+  toggle.click();
+  expect(s.view.contentEl.querySelector('.seo-audit-length-error')).not.toBeNull();
+  expect(s.view.contentEl.querySelector('.seo-audit-error-row')).not.toBeNull();
+  expect(s.scheduleSave).toHaveBeenCalledTimes(2);
   await s.detailsView.onClose();
   await s.view.onClose();
 });

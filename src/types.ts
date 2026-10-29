@@ -1,6 +1,8 @@
 export interface FieldValue { value: string; length: number }
 export const fieldKeys = ['title', 'description', 'canonical', 'robots', 'og:title', 'og:description', 'og:image', 'twitter:title', 'twitter:description', 'twitter:image'] as const;
 export type FieldKey = typeof fieldKeys[number];
+export const lengthFields = ['title', 'description', 'og:title', 'og:description', 'twitter:title', 'twitter:description', 'h1'] as const;
+export type LengthField = typeof lengthFields[number];
 export type AlternateLinks = Record<string, string | string[]>;
 export interface SeoMetadata {
   fields: Record<FieldKey, FieldValue[]>;
@@ -27,6 +29,8 @@ export interface AuditSettings {
   language: 'auto' | 'en' | 'uk';
   visibleColumns: string[];
   pageSize: number;
+  highlightIssues: boolean;
+  lengthLimits: Record<LengthField, number>;
 }
 export interface PluginData {
   schemaVersion: 1;

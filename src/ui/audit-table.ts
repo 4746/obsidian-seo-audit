@@ -3,6 +3,7 @@ import type { AuditController } from './audit-controller';
 import type { Translator } from '../i18n';
 import { button, el, fileLinks } from './dom';
 import { fieldKeys, type AuditResult, type FieldKey, type IndexedPage } from '../types';
+import { getLengthLimit } from '../utils/metadata-length';
 
 export const columns = ['url', 'files', 'status', ...fieldKeys, 'h1Count', 'responseTimeMs', 'scannedAt', 'finalUrl', 'xRobotsTag', 'alternates', 'h1', 'error'] as const;
 export type Column = typeof columns[number];
@@ -154,7 +155,7 @@ state.selected.delete(p.url);
     if (state.focused === page.url) {
 row.classList.add('is-selected');
 }
-    if (result?.error || (result?.status ?? 0) >= 400) {
+    if (controller.data.settings.highlightIssues && (result?.error || (result?.status ?? 0) >= 400)) {
 row.classList.add('seo-audit-error-row');
 }
     const showDetails = (): void => {
@@ -180,6 +181,11 @@ state.selected.delete(page.url);
 };
     for (const column of shown) {
       const cell = el(row, 'td'); const value = columnValue(page, result, column);
+      const limit = getLengthLimit(column, controller.data.settings);
+      const values = column === 'h1' ? result?.metadata?.h1 : result?.metadata?.fields[column as FieldKey];
+      if (controller.data.settings.highlightIssues && limit !== null && values?.some(value => value.length > limit)) {
+        cell.classList.add('seo-audit-length-error');
+      }
       if (column === 'files') {
 fileLinks(cell, page, t, actions.openFile);
 } else if (column === 'url') {
@@ -207,10 +213,10 @@ fileLinks(cell, page, t, actions.openFile);
       } else {
         const text = column === 'scannedAt' && value ? new Date(String(value)).toLocaleString() : value === null || value === '' ? t(result ? 'missing' : 'unscanned') : String(value);
         cell.textContent = text;
-        if (value === null || value === '') {
+        if (controller.data.settings.highlightIssues && (value === null || value === '')) {
 cell.classList.add('seo-audit-missing');
 }
-        if ((column === 'status' && typeof value === 'number' && value >= 400) || (column === 'error' && value)) {
+        if (controller.data.settings.highlightIssues && ((column === 'status' && typeof value === 'number' && value >= 400) || (column === 'error' && value))) {
 cell.classList.add('seo-audit-error');
 }
       }

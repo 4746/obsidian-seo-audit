@@ -1,6 +1,7 @@
-import {PluginSettingTab, type App, type SettingDefinitionItem} from 'obsidian';
+import {PluginSettingTab, type App, type Setting, type SettingDefinitionItem} from 'obsidian';
 import type SeoAuditPlugin from '../main';
 import {cleanSettings} from './settings';
+import {lengthFields} from '../types';
 
 export class AuditSettingTab extends PluginSettingTab {
 	constructor(app: App, private audit: SeoAuditPlugin) {
@@ -72,6 +73,32 @@ export class AuditSettingTab extends PluginSettingTab {
 							}));
 					},
 				},
+			],
+		}, {
+			type: 'group',
+			heading: t('lengthRules'),
+			items: [
+				{ name: t('lengthRulesHelp') },
+				...lengthFields.map(field => ({
+					name: field,
+					desc: t('recommendedLength'),
+					render: (setting: Setting) => {
+						setting.addText(text => {
+							text.inputEl.type = 'number';
+							text.inputEl.min = '1';
+							text.inputEl.step = '1';
+							text.setValue(String(this.audit.data.settings.lengthLimits[field])).onChange(value => {
+								const limit = Number(value);
+								if (!value.trim() || !Number.isSafeInteger(limit) || limit <= 0) {
+									return;
+								}
+								this.audit.data.settings.lengthLimits[field] = limit;
+								this.audit.scheduleSave();
+								this.audit.notify();
+							});
+						});
+					},
+				})),
 			],
 		}];
 	}

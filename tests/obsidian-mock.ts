@@ -45,3 +45,16 @@ export class Modal {
 
 export function setIcon(element: HTMLElement, icon: string): void { element.dataset.icon = icon; }
 export function setTooltip(element: HTMLElement, tooltip: string): void { element.dataset.tooltip = tooltip; }
+export class ToggleComponent {
+  toggleEl = document.createElement('button');
+  private value = false;
+  private changed = (_value: boolean) => {};
+  constructor(parent: HTMLElement) {
+    this.toggleEl.type = 'button';
+    this.toggleEl.setAttribute('role', 'switch');
+    parent.appendChild(this.toggleEl);
+    this.toggleEl.onclick = () => { this.setValue(!this.value); this.changed(this.value); };
+  }
+  setValue(value: boolean) { this.value = value; this.toggleEl.setAttribute('aria-checked', String(value)); return this; }
+  onChange(callback: (value: boolean) => void) { this.changed = callback; return this; }
+}

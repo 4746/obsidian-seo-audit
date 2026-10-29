@@ -3,8 +3,9 @@ import type { FieldKey, FieldValue } from '../types';
 import type { Translator } from '../i18n';
 import type { AuditController } from './audit-controller';
 import { button, el, fileLinks } from './dom';
+import { getLengthLimit } from '../utils/metadata-length';
 
-function renderValues(parent: HTMLElement, label: string, values: FieldValue[], t: Translator): void {
+function renderValues(parent: HTMLElement, label: string, values: FieldValue[], t: Translator, limit: number | null = null): void {
   const field = el(parent, 'div', undefined, 'seo-audit-detail-field');
   el(field, 'h4', label);
   if (!values.length) {
@@ -14,7 +15,11 @@ function renderValues(parent: HTMLElement, label: string, values: FieldValue[], 
   for (const v of values) {
     const entry = el(field, 'div', undefined, 'seo-audit-detail-value');
     el(entry, 'div', v.value || t('missing'), v.value.trim() ? 'seo-audit-original' : 'seo-audit-original seo-audit-missing');
-    el(entry, 'span', `${t('length')}: ${v.length}`, 'seo-audit-character-count');
+    const count = limit === null ? String(v.length) : `${v.length} / ${limit}`;
+    el(entry, 'span', `${t('length')}: ${count}`, 'seo-audit-character-count');
+    if (limit !== null && v.length > limit) {
+      entry.classList.add('seo-audit-length-error');
+    }
   }
 }
 export function renderAuditDetails(host: HTMLElement, controller: AuditController, focused: string | null, openFile: (path: string) => void, close: () => void): void {
@@ -94,11 +99,11 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
   for (const group of groups) {
     const body = section(group.id, group.label, group.id === 'seo');
     for (const key of group.keys) {
-      renderValues(body, key, r.metadata?.fields[key] ?? [], t);
+      renderValues(body, key, r.metadata?.fields[key] ?? [], t, getLengthLimit(key, controller.data.settings));
     }
   }
   const headings = section('h1', `${t('h1')} (${r.metadata?.h1Count ?? 0})`);
-  renderValues(headings, t('h1'), r.metadata?.h1 ?? [], t);
+  renderValues(headings, t('h1'), r.metadata?.h1 ?? [], t, getLengthLimit('h1', controller.data.settings));
   const alternates = section('alternates', t('alternates'));
   if (!r.metadata || Object.keys(r.metadata.alternates).length === 0) {
     el(alternates, 'p', t('missing'), 'seo-audit-missing');

@@ -7,6 +7,17 @@ import type { AuditResult, PluginData } from '../src/types';
 
 const result: AuditResult = { url: 'https://a.test', finalUrl: null, scannedAt: '2026-10-29T00:00:00Z', status: 200, responseTimeMs: 42, xRobotsTag: [], error: null, metadata: parseHtml('<title>=HYPERLINK("bad")</title><meta name="description" content="one"><meta name="description" content="two">') };
 describe('storage', () => {
+  it('defaults issue highlights to enabled and preserves an explicit disabled setting', () => {
+    expect(cleanSettings(null).highlightIssues).toBe(true);
+    expect(cleanSettings({ highlightIssues: false }).highlightIssues).toBe(false);
+    expect(cleanSettings({ highlightIssues: 'false' }).highlightIssues).toBe(true);
+  });
+  it('validates independent length thresholds and keeps settings objects isolated', () => {
+    const settings = cleanSettings({ lengthLimits: { title: 70, description: -1, 'og:title': 1.5, 'og:description': Infinity, 'twitter:title': '80', 'twitter:description': 250 } });
+    expect(settings.lengthLimits).toEqual({ title: 70, description: 160, 'og:title': 60, 'og:description': 160, 'twitter:title': 70, 'twitter:description': 250, h1: 70 });
+    settings.lengthLimits.title = 1;
+    expect(cleanSettings(null).lengthLimits.title).toBe(60);
+  });
   it('validates page size against the supported choices', () => {
     for (const pageSize of [25, 50, 100, 200, 500]) {
       expect(cleanSettings({ pageSize }).pageSize).toBe(pageSize);
