@@ -428,3 +428,22 @@ it('toggles table issue highlights without changing values or sidebar highlights
   await s.detailsView.onClose();
   await s.view.onClose();
 });
+
+it('renders alternates as a table with duplicate languages and safe links', async () => {
+  const s = await setup();
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], error: null, metadata: parseHtml('<link rel="alternate" hreflang="de" href="https://other.test/de"><link rel="alternate" hreflang="de" href="/de/other"><link rel="alternate" hreflang="x-default" href="/"><link rel="alternate" hreflang="bad" href="javascript:alert(1)"><link rel="alternate" hreflang="invalid" href="http://">') };
+  s.detailsView.setPage('https://page0.test');
+  const table = s.detailsView.contentEl.querySelector<HTMLTableElement>('.seo-audit-alternates-table')!;
+  expect(Array.from(table.querySelectorAll('th')).map(header => header.textContent)).toEqual(['Language code', 'URL']);
+  expect(table.querySelectorAll('tbody tr')).toHaveLength(5);
+  expect(Array.from(table.querySelectorAll('.seo-audit-alternate-code')).map(code => code.textContent)).toEqual(['de', 'de', 'x-default', 'bad', 'invalid']);
+  const links = table.querySelectorAll('a');
+  expect(links).toHaveLength(3);
+  expect(links[1]!.textContent).toBe('/de/other');
+  expect(links[1]!.href).toBe('https://page0.test/de/other');
+  expect(links[1]!.rel).toBe('noopener noreferrer');
+  expect(table.textContent).toContain('javascript:alert(1)');
+  expect(table.querySelector('a[href^="javascript:"]')).toBeNull();
+  await s.detailsView.onClose();
+  await s.view.onClose();
+});

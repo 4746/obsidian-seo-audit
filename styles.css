@@ -96,8 +96,13 @@
 .seo-audit .seo-audit-character-count { display: block; margin-top: 6px; color: var(--text-muted); font-size: var(--font-ui-smaller); }
 .seo-audit .seo-audit-length-error { background: color-mix(in srgb, var(--text-error) 8%, transparent); }
 .seo-audit .seo-audit-length-error .seo-audit-character-count { color: var(--text-error); }
-.seo-audit .seo-audit-alternate + .seo-audit-alternate { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--background-modifier-border); }
-.seo-audit .seo-audit-alternate h4 { margin: 0 0 6px; font-size: var(--font-ui-small); color: var(--text-muted); }
+.seo-audit .seo-audit-alternates-wrap { border: 1px solid var(--background-modifier-border); border-radius: 6px; overflow: hidden; }
+.seo-audit .seo-audit-alternates-table { table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+.seo-audit .seo-audit-alternates-table th { background: var(--background-secondary); color: var(--text-muted); font-weight: var(--font-semibold); }
+.seo-audit .seo-audit-alternates-table th:first-child { width: 90px; }
+.seo-audit .seo-audit-alternates-table th, .seo-audit .seo-audit-alternates-table td { padding: 8px; overflow-wrap: anywhere; vertical-align: top; }
+.seo-audit .seo-audit-alternates-table tbody tr:last-child td { border-bottom: none; }
+.seo-audit .seo-audit-alternate-code { display: inline-block; padding: 2px 6px; border-radius: 4px; background: var(--background-secondary); font-size: var(--font-ui-smaller); }
 .seo-audit .seo-audit-language-code { cursor: help; text-decoration: underline dotted var(--text-faint); text-underline-offset: 3px; }
 .seo-audit .seo-audit-details dl { display: grid; grid-template-columns: minmax(120px, 220px) minmax(0, 1fr); gap: 6px 12px; }
 .seo-audit .seo-audit-details dd { margin: 0; user-select: text; }

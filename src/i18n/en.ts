@@ -1,4 +1,5 @@
 export const en = {
+  languageCode: 'Language code',
   highlightIssues: 'Highlight errors and warnings',
   lengthRules: 'Character count rules', recommendedLength: 'Recommended length (characters)',
   lengthRulesHelp: 'Editable plugin thresholds. Exceeding a threshold is marked as an error. Google does not define fixed character limits; these values do not predict truncation.',

@@ -108,11 +108,29 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
   if (!r.metadata || Object.keys(r.metadata.alternates).length === 0) {
     el(alternates, 'p', t('missing'), 'seo-audit-missing');
   } else {
+    const wrap = el(alternates, 'div', undefined, 'seo-audit-alternates-wrap');
+    const table = el(wrap, 'table', undefined, 'seo-audit-alternates-table');
+    table.setAttribute('aria-label', t('alternates'));
+    const head = el(el(table, 'thead'), 'tr');
+    el(head, 'th', t('languageCode')).scope = 'col';
+    el(head, 'th', t('url')).scope = 'col';
+    const body = el(table, 'tbody');
     for (const [language, hrefs] of Object.entries(r.metadata.alternates)) {
-      const entry = el(alternates, 'div', undefined, 'seo-audit-alternate');
-      el(entry, 'h4', language);
       for (const href of Array.isArray(hrefs) ? hrefs : [hrefs]) {
-        el(entry, 'div', href, 'seo-audit-original');
+        const row = el(body, 'tr');
+        el(el(row, 'td'), 'span', language, 'seo-audit-alternate-code');
+        const cell = el(row, 'td');
+        // Resolve relative alternates while keeping the original value visible.
+        let target: URL | null = null;
+        try {
+          target = new URL(href, page.url);
+        } catch { /* Malformed URLs remain readable as text. */ }
+        if (target && ['http:', 'https:'].includes(target.protocol)) {
+          const link = el(cell, 'a', href, 'seo-audit-original');
+          link.href = target.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+        } else {
+          el(cell, 'span', href, 'seo-audit-original');
+        }
       }
     }
   }

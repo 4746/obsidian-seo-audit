@@ -1,6 +1,7 @@
 import type { Message } from './en';
 
 export const uk: Record<Message, string> = {
+  languageCode: 'Код мови',
   highlightIssues: 'Підсвічувати помилки й попередження',
   lengthRules: 'Правила кількості символів', recommendedLength: 'Рекомендована довжина (символів)',
   lengthRulesHelp: 'Налаштовувані пороги плагіна. Перевищення позначається як помилка. Google не встановлює фіксованих меж символів; ці значення не прогнозують обрізання тексту.',
