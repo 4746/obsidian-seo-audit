@@ -7,7 +7,7 @@ import { loadData } from '../src/storage/audit-storage';
 import { UrlIndex } from '../src/indexer/url-indexer';
 import { translator } from '../src/i18n';
 import { parseHtml } from '../src/parser/html-parser';
-import { lengthFields } from '../src/types';
+import { lengthFields, stringFieldKeys } from '../src/types';
 
 function menuFor(view: AuditView) {
   const menu = new Menu(); view.onPaneMenu(menu, 'more-options');
@@ -89,16 +89,18 @@ it('renders details as safe text with duplicates, all H1/alternates and lengths;
   expect(s.view.contentEl.querySelector('.seo-audit-error-row')).not.toBeNull();
   await s.view.onClose();
 });
-it('renders canonical strings safely in the table and details without character counts', async () => {
+it.each(stringFieldKeys)('renders %s strings safely in the table and details without character counts', async key => {
   const s = await setup();
   const metadata = parseHtml('<link rel="canonical" href="https://fbfast.io"><link rel="canonical" href="&lt;img onerror=bad()&gt;">');
+  metadata.fields[key] = ['https://fbfast.io', '<img onerror=bad()>'];
+  s.data.settings.visibleColumns = ['url', key];
   s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], error: null, metadata };
   vi.useFakeTimers(); s.notify(); await vi.advanceTimersByTimeAsync(151);
   const row = s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!;
   expect(row.textContent).toContain('https://fbfast.io · <img onerror=bad()>');
   row.click();
-  const field = Array.from(s.detailsView.contentEl.querySelectorAll('.seo-audit-detail-field')).find(field => field.querySelector('h4')?.textContent === 'canonical')!;
-  expect(Array.from(field.querySelectorAll('.seo-audit-original')).map(node => node.textContent)).toEqual(metadata.fields.canonical);
+  const field = Array.from(s.detailsView.contentEl.querySelectorAll('.seo-audit-detail-field')).find(field => field.querySelector('h4')?.textContent === key)!;
+  expect(Array.from(field.querySelectorAll('.seo-audit-original')).map(node => node.textContent)).toEqual(metadata.fields[key]);
   expect(field.querySelector('.seo-audit-character-count')).toBeNull();
   expect(field.querySelector('img')).toBeNull();
   await s.view.onClose();

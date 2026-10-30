@@ -3,17 +3,18 @@ import { loadData, SaveQueue } from '../src/storage/audit-storage';
 import { cleanSettings } from '../src/settings/settings';
 import { exportCsv, exportJson } from '../src/export/export-service';
 import { parseHtml } from '../src/parser/html-parser';
-import type { AuditResult, PluginData } from '../src/types';
+import { stringFieldKeys, type AuditResult, type PluginData } from '../src/types';
 
 const result: AuditResult = { url: 'https://a.test', finalUrl: null, scannedAt: '2026-10-29T00:00:00Z', status: 200, responseTimeMs: 42, xRobotsTag: [], error: null, metadata: parseHtml('<title>=HYPERLINK("bad")</title><meta name="description" content="one"><meta name="description" content="two">') };
 describe('storage', () => {
-  it('round-trips canonical strings and rejects invalid entries without migrating them', () => {
+  it.each(stringFieldKeys)('round-trips %s strings and rejects invalid entries without migrating them', key => {
     const data = loadData(null);
     data.cache.latest[result.url] = { ...result, metadata: parseHtml('<link rel="canonical" href="https://fbfast.io"><link rel="canonical" href="/😀">') };
+    data.cache.latest[result.url]!.metadata!.fields[key] = ['https://fbfast.io', '/😀', ''];
     expect(loadData(JSON.parse(JSON.stringify(data)))).toEqual(data);
     for (const canonical of [[{ value: 'https://fbfast.io', length: 17 }], [42], [null], 'https://fbfast.io']) {
       const bad = JSON.parse(JSON.stringify(data)) as PluginData;
-      Object.assign(bad.cache.latest[result.url]!.metadata!.fields, { canonical });
+      Object.assign(bad.cache.latest[result.url]!.metadata!.fields, { [key]: canonical });
       expect(() => loadData(bad)).toThrow(/cache/);
     }
   });
@@ -62,13 +63,13 @@ it('exports every source, duplicate field and Unicode length as JSON and CSV', (
   expect(csv).toContain('"\'=formula"');
   expect(csv).toContain('b.md'); expect(csv).toContain('""length""'); expect(csv).toContain('HYPERLINK(\\""bad\\"")');
 });
-it('exports canonical as string arrays in JSON and CSV', () => {
+it.each(stringFieldKeys)('exports %s as string arrays in JSON and CSV', key => {
   const canonical = ['https://fbfast.io', '/😀?q="quoted"', 'https://fbfast.io'];
   const metadata = parseHtml('');
-  metadata.fields.canonical = canonical;
+  metadata.fields[key] = canonical;
   const latest = { [result.url]: { ...result, metadata } };
   const pages = [{ url: result.url, files: [] }];
   const json = JSON.parse(exportJson(pages, latest)) as { pages: { result: AuditResult }[] };
-  expect(json.pages[0]!.result.metadata!.fields.canonical).toEqual(canonical);
+  expect(json.pages[0]!.result.metadata!.fields[key]).toEqual(canonical);
   expect(exportCsv(pages, latest)).toContain(`"${JSON.stringify(canonical).replace(/"/g, '""')}"`);
 });

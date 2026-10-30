@@ -1,4 +1,4 @@
-import {fieldKeys, type SeoMetadata} from '../types';
+import {fieldKeys, isStringField, type SeoMetadata} from '../types';
 import {fieldValue} from '../utils/string-length';
 import {addAlternate} from '../utils/alternate-links';
 
@@ -16,7 +16,12 @@ export function parseMetadata(doc: Document): SeoMetadata {
 			}
 			const matches = key.includes(':') ? property === key || name === key : name === key;
 			if (matches && meta.hasAttribute('content')) {
-				fields[key].push(fieldValue(meta.getAttribute('content')!));
+				const content = meta.getAttribute('content')!;
+				if (isStringField(key)) {
+					fields[key].push(content);
+				} else {
+					fields[key].push(fieldValue(content));
+				}
 			}
 		}
 	}

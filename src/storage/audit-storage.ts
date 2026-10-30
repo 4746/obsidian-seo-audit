@@ -1,4 +1,4 @@
-import {fieldKeys, type AuditResult, type PluginData} from '../types';
+import {fieldKeys, isStringField, type AuditResult, type PluginData} from '../types';
 import {cleanSettings} from '../settings/settings';
 import {codePointLength} from '../utils/string-length';
 
@@ -33,7 +33,7 @@ export function validResult(v: unknown): v is AuditResult {
 	const m = v.metadata;
 	return object(m) && object(m.fields) && fieldKeys.every(k => {
 			const values = (m.fields as Record<string, unknown>)[k];
-			return k === 'canonical' ? Array.isArray(values) && values.every(value => typeof value === 'string') : validValues(values);
+			return isStringField(k) ? Array.isArray(values) && values.every(value => typeof value === 'string') : validValues(values);
 		}) && validValues(m.h1)
 		&& m.h1Count === (m.h1 as unknown[]).length && object(m.alternates)
 		&& Object.values(m.alternates).every(value => typeof value === 'string' || (Array.isArray(value) && value.length > 0 && value.every(href => typeof href === 'string')));

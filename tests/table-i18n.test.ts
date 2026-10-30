@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { filterPages, type TableFilter } from '../src/ui/audit-table';
 import { translator } from '../src/i18n';
 import { parseHtml } from '../src/parser/html-parser';
-import type { AuditResult } from '../src/types';
+import { stringFieldKeys, type AuditResult } from '../src/types';
 const pages = [{ url: 'https://a.test', files: ['Folder/One.md', 'Two.md'] }, { url: 'https://b.test', files: ['Three.md'] }, { url: 'https://c.test', files: ['Four.md'] }];
 const result: AuditResult = { url: pages[0]!.url, finalUrl: null, status: 200, responseTimeMs: 10, scannedAt: new Date().toISOString(), metadata: parseHtml('<title>Unique 😀</title><meta name="description" content=""><h1>Heading</h1>'), xRobotsTag: [], error: null };
 const latest = { [pages[0]!.url]: result, [pages[1]!.url]: { ...result, url: pages[1]!.url, status: 404, responseTimeMs: 2, metadata: parseHtml(''), error: { kind: 'http' as const, message: 'HTTP 404' } } };
@@ -30,13 +30,16 @@ it('uses Obsidian locale, manual override and English fallback', () => {
   expect(translator('en', 'uk')('stop')).toBe('Stop');
   expect(translator('auto', 'de')('stop')).toBe('Stop');
 });
-it('searches, sorts and filters canonical strings, including empty and missing values', () => {
+it.each(stringFieldKeys)('searches, sorts and filters %s strings, including empty and missing values', key => {
   const scanned = {
     [pages[0]!.url]: { ...result, metadata: parseHtml('<link rel="canonical" href="https://z.test/😀">') },
     [pages[1]!.url]: { ...result, url: pages[1]!.url, metadata: parseHtml('<link rel="canonical" href="  ">') },
   };
+  scanned[pages[0]!.url]!.metadata.fields.canonical = [];
+  scanned[pages[0]!.url]!.metadata.fields[key] = ['https://z.test/😀'];
+  scanned[pages[1]!.url]!.metadata.fields[key] = ['  '];
   expect(filterPages(pages, scanned, { ...base, search: 'z.test/😀' })).toEqual([pages[0]]);
-  expect(filterPages(pages, scanned, { ...base, field: 'canonical', presence: 'present' })).toEqual([pages[0]]);
-  expect(filterPages(pages, scanned, { ...base, field: 'canonical', presence: 'missing' })).toEqual([pages[1]]);
-  expect(filterPages(pages, scanned, { ...base, sort: 'canonical' })).toEqual([pages[1], pages[0], pages[2]]);
+  expect(filterPages(pages, scanned, { ...base, field: key, presence: 'present' })).toEqual([pages[0]]);
+  expect(filterPages(pages, scanned, { ...base, field: key, presence: 'missing' })).toEqual([pages[1]]);
+  expect(filterPages(pages, scanned, { ...base, sort: key })).toEqual([pages[1], pages[0], pages[2]]);
 });
