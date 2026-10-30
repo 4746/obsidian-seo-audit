@@ -23,11 +23,11 @@ text = `'${text}`;
 }
 
 export function exportCsv(pages: IndexedPage[], latest: Record<string, AuditResult>): string {
-  const headers = ['url', 'files', 'scannedAt', 'finalUrl', 'status', 'responseTimeMs', 'error', 'xRobotsTag', ...fieldKeys, 'alternates', 'h1', 'h1Count'];
+  const headers = ['url', 'files', 'scannedAt', 'finalUrl', 'status', 'responseTimeMs', 'error', 'xRobotsTag', ...fieldKeys, 'lang', 'alternates', 'h1', 'h1Count'];
   const rows = pages.map(page => {
     const r = latest[page.url];
     return [page.url, page.files, r?.scannedAt, r?.finalUrl, r?.status, r?.responseTimeMs, r?.error, r?.xRobotsTag,
-      ...fieldKeys.map(key => r?.metadata?.fields[key]), r?.metadata?.alternates, r?.metadata?.h1, r?.metadata?.h1Count].map(cell).join(',');
+      ...fieldKeys.map(key => r?.metadata?.fields[key]), r?.metadata?.lang, r?.metadata?.alternates, r?.metadata?.h1, r?.metadata?.h1Count].map(cell).join(',');
   });
   // Nested arrays remain JSON inside CSV cells, preserving every duplicate and length.
   return '\uFEFF' + [headers.map(cell).join(','), ...rows].join('\r\n');

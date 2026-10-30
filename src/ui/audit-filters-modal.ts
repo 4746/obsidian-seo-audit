@@ -11,6 +11,8 @@ export class AuditFiltersModal extends Modal {
   private locale = '';
   private statusFilter!: HTMLSelectElement;
   private statusSignature = '';
+  private languageFilter!: HTMLSelectElement;
+  private languageSignature = '';
 
   constructor(app: App, private controller: AuditController, private filter: TableFilter, private changed: () => void) {
     super(app);
@@ -23,6 +25,7 @@ export class AuditFiltersModal extends Modal {
         this.render();
       } else {
         this.refreshStatuses();
+        this.refreshLanguages();
       }
     });
   }
@@ -57,6 +60,12 @@ export class AuditFiltersModal extends Modal {
     });
     this.statusSignature = '';
     this.refreshStatuses();
+    this.languageFilter = select(this.contentEl, t('lang'), [], this.filter.language, value => {
+      this.filter.language = value;
+      this.changed();
+    });
+    this.languageSignature = '';
+    this.refreshLanguages();
     select(this.contentEl, t('presence'), [['any', t('any')], ['present', t('present')], ['missing', t('missing')]], this.filter.presence, value => {
       this.filter.presence = value;
       this.changed();
@@ -67,6 +76,7 @@ export class AuditFiltersModal extends Modal {
       this.searchTimer = undefined;
       this.filter.search = '';
       this.filter.status = 'any';
+      this.filter.language = 'any';
       this.filter.field = 'url';
       this.filter.presence = 'any';
       this.render();
@@ -91,6 +101,29 @@ export class AuditFiltersModal extends Modal {
       el(this.statusFilter, 'option', label).value = value;
     }
     this.statusFilter.value = this.filter.status;
+  }
+
+  /** Match language tags case-insensitively while retaining original metadata. */
+  private refreshLanguages(): void {
+    const t = this.controller.t;
+    const languages = [...new Set(this.controller.index.pages().flatMap(page => {
+      const lang = this.controller.data.cache.latest[page.url]?.metadata?.lang?.trim().toLowerCase();
+      return lang ? [lang] : [];
+    }))].sort();
+    const signature = JSON.stringify([languages, this.filter.language]);
+    if (signature === this.languageSignature) {
+      return;
+    }
+    this.languageSignature = signature;
+    const options: [string, string][] = [['any', t('any')], ['missing', t('missing')], ...languages.map(lang => [`lang:${lang}`, lang] as [string, string])];
+    if (!options.some(([value]) => value === this.filter.language)) {
+      options.push([this.filter.language, this.filter.language.slice('lang:'.length)]);
+    }
+    this.languageFilter.replaceChildren();
+    for (const [value, label] of options) {
+      el(this.languageFilter, 'option', label).value = value;
+    }
+    this.languageFilter.value = this.filter.language;
   }
 
   onClose(): void {

@@ -6,6 +6,13 @@ describe('code point length', () => {
   it.each([['', 0], ['SEO', 3], ['Україна', 7], ['😀𐐀', 2], ['e\u0301', 2], ['👩‍💻', 3]])('counts %s as %i', (s, n) => expect(codePointLength(s)).toBe(n));
 });
 describe('HTML parser', () => {
+  it.each(['en', 'uk', 'en-GB', ' EN-us ', ''])('preserves the root HTML lang attribute %j', lang => {
+    expect(parseHtml(`<html lang="${lang}"><body lang="fr"><meta name="lang" content="de"></body></html>`).lang).toBe(lang);
+  });
+  it('does not infer page language from metadata, alternates or nested elements', () => {
+    expect(parseHtml('<meta http-equiv="content-language" content="en"><link rel="alternate" hreflang="uk" href="/uk"><div lang="fr">Text</div>').lang).toBeNull();
+    expect(parseHtml('').lang).toBeNull();
+  });
   it('stores canonical strings in document order without changing or deduplicating URLs', () => {
     const m = parseHtml('<link rel="canonical" href="https://fbfast.io"><link rel="canonical" href=" /😀?a=1&amp;b=2 "><link rel="canonical" href="https://fbfast.io"><link rel="canonical" href=""><link rel="canonical">');
     expect(m.fields.canonical).toEqual(['https://fbfast.io', ' /😀?a=1&b=2 ', 'https://fbfast.io', '']);

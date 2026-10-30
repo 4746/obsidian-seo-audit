@@ -1,12 +1,24 @@
 import { expect, it } from 'vitest';
-import { filterPages, type TableFilter } from '../src/ui/audit-table';
+import { columnValue, filterPages, type TableFilter } from '../src/ui/audit-table';
 import { translator } from '../src/i18n';
 import { parseHtml } from '../src/parser/html-parser';
 import { stringFieldKeys, type AuditResult } from '../src/types';
 const pages = [{ url: 'https://a.test', files: ['Folder/One.md', 'Two.md'] }, { url: 'https://b.test', files: ['Three.md'] }, { url: 'https://c.test', files: ['Four.md'] }];
 const result: AuditResult = { url: pages[0]!.url, finalUrl: null, status: 200, responseTimeMs: 10, scannedAt: new Date().toISOString(), metadata: parseHtml('<title>Unique 😀</title><meta name="description" content=""><h1>Heading</h1>'), xRobotsTag: [], error: null };
 const latest = { [pages[0]!.url]: result, [pages[1]!.url]: { ...result, url: pages[1]!.url, status: 404, responseTimeMs: 2, metadata: parseHtml(''), error: { kind: 'http' as const, message: 'HTTP 404' } } };
-const base: TableFilter = { search: '', status: 'any', field: 'title', presence: 'any', sort: 'url', descending: false };
+const base: TableFilter = { search: '', status: 'any', language: 'any', field: 'title', presence: 'any', sort: 'url', descending: false };
+it('filters page languages case-insensitively without merging regional tags or unscanned pages', () => {
+  const indexed = Array.from({ length: 6 }, (_, i) => ({ url: `https://page${i}.test`, files: [] }));
+  const scanned: Record<string, AuditResult> = Object.fromEntries([' EN ', 'en-GB', '', null].map((lang, i) => [indexed[i]!.url, { ...result, url: indexed[i]!.url, metadata: { ...parseHtml(''), lang } }]));
+  scanned[indexed[4]!.url] = { ...result, url: indexed[4]!.url, metadata: null };
+  expect(filterPages(indexed, scanned, { ...base, language: 'lang:en' })).toEqual([indexed[0]]);
+  expect(filterPages(indexed, scanned, { ...base, language: 'lang:en-gb' })).toEqual([indexed[1]]);
+  expect(filterPages(indexed, scanned, { ...base, language: 'missing' })).toEqual([indexed[2], indexed[3]]);
+  expect(filterPages(indexed, scanned, base)).toEqual(indexed);
+  expect(columnValue(indexed[0]!, scanned[indexed[0]!.url], 'lang')).toBe(' EN ');
+  expect(filterPages(indexed, scanned, { ...base, search: 'en-gb' })).toEqual([indexed[1]]);
+  expect(filterPages(indexed, scanned, { ...base, sort: 'lang' }).slice(-2)).toEqual([indexed[4], indexed[5]]);
+});
 it('searches all field values and source paths', () => {
   for (const search of ['folder/one', 'unique 😀', 'heading', 'two.md']) expect(filterPages(pages, latest, { ...base, search }).map(p => p.url)).toEqual([pages[0]!.url]);
 });

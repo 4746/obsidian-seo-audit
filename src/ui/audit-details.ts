@@ -129,6 +129,9 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
 	];
 	for (const group of groups) {
 		const body = section(group.id, group.label, group.id === 'seo');
+		if (group.id === 'seo') {
+			renderValues(body, t('lang'), r.metadata?.lang == null ? [] : [r.metadata.lang], t);
+		}
 		for (const key of group.keys) {
 			renderValues(body, key, r.metadata?.fields[key] ?? [], t, getLengthLimit(key, controller.data.settings));
 		}

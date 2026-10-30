@@ -1,6 +1,7 @@
 import type { Message } from './en';
 
 export const uk: Record<Message, string> = {
+  lang: 'Мова сторінки',
   clearResults: 'Очистити дані сканування', cancel: 'Скасувати',
   clearResultsConfirm: 'Ви впевнені, що хочете видалити всі дані сканування? Цю дію неможливо скасувати. Поточне сканування буде зупинено. Налаштування та вихідні нотатки збережуться.',
   languageCode: 'Код мови',

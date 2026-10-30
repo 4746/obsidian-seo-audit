@@ -7,6 +7,16 @@ import { stringFieldKeys, type AuditResult, type PluginData } from '../src/types
 
 const result: AuditResult = { url: 'https://a.test', finalUrl: null, scannedAt: '2026-10-29T00:00:00Z', status: 200, responseTimeMs: 42, xRobotsTag: [], error: null, metadata: parseHtml('<title>=HYPERLINK("bad")</title><meta name="description" content="one"><meta name="description" content="two">') };
 describe('storage', () => {
+  it('persists a nullable page language and rejects other types', () => {
+    const data = loadData(null);
+    data.cache.latest[result.url] = { ...result, metadata: parseHtml('<html lang=" EN-gb ">') };
+    expect(loadData(JSON.parse(JSON.stringify(data))).cache.latest[result.url]!.metadata!.lang).toBe(' EN-gb ');
+    for (const lang of [42, [], {}, undefined]) {
+      const bad = JSON.parse(JSON.stringify(data)) as PluginData;
+      Object.assign(bad.cache.latest[result.url]!.metadata!, { lang });
+      expect(() => loadData(bad)).toThrow(/cache/);
+    }
+  });
   it.each(stringFieldKeys)('round-trips %s strings and rejects invalid entries without migrating them', key => {
     const data = loadData(null);
     data.cache.latest[result.url] = { ...result, metadata: parseHtml('<link rel="canonical" href="https://fbfast.io"><link rel="canonical" href="/😀">') };
@@ -52,6 +62,16 @@ describe('storage', () => {
     await expect(one).rejects.toThrow('disk'); await two;
     expect(snapshots).toEqual(['page']);
   });
+});
+it('exports page language in JSON and CSV', () => {
+  const latest = { [result.url]: { ...result, metadata: parseHtml('<html lang="en-GB">') } };
+  const pages = [{ url: result.url, files: [] }];
+  const json = JSON.parse(exportJson(pages, latest)) as { pages: { result: AuditResult }[] };
+  expect(json.pages[0]!.result.metadata!.lang).toBe('en-GB');
+  const csv = exportCsv(pages, latest).split('\r\n');
+  const index = csv[0]!.split(',').indexOf('"lang"');
+  expect(index).toBeGreaterThan(-1);
+  expect(csv[1]!.split(',')[index]).toBe('"en-GB"');
 });
 it('exports every source, duplicate field and Unicode length as JSON and CSV', () => {
   const pages = [{ url: result.url, files: ['a.md', 'b.md'] }, { url: '=formula', files: [] }];

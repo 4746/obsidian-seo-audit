@@ -5,7 +5,7 @@ import {button, el, fileLinks} from './dom';
 import {fieldKeys, type AuditResult, type FieldKey, type IndexedPage} from '../types';
 import {getLengthLimit} from '../utils/metadata-length';
 
-export const columns = ['url', 'files', 'status', ...fieldKeys, 'h1Count', 'responseTimeMs', 'scannedAt', 'finalUrl', 'xRobotsTag', 'alternates', 'h1', 'error'] as const;
+export const columns = ['url', 'files', 'status', ...fieldKeys, 'lang', 'h1Count', 'responseTimeMs', 'scannedAt', 'finalUrl', 'xRobotsTag', 'alternates', 'h1', 'error'] as const;
 export type Column = typeof columns[number];
 
 export function columnValue(page: IndexedPage, result: AuditResult | undefined, column: Column): string | number | null {
@@ -22,6 +22,8 @@ export function columnValue(page: IndexedPage, result: AuditResult | undefined, 
 		return result.metadata?.fields[column as FieldKey].map(v => typeof v === 'string' ? v : v.value).join(' · ') ?? null;
 	}
 	switch (column) {
+		case 'lang':
+			return result.metadata?.lang ?? null;
 		case 'h1Count':
 			return result.metadata?.h1Count ?? null;
 		case 'h1':
@@ -40,6 +42,7 @@ export function columnValue(page: IndexedPage, result: AuditResult | undefined, 
 export interface TableFilter {
 	search: string;
 	status: string;
+	language: string;
 	field: FieldKey | 'url';
 	presence: string;
 	sort: Column;
@@ -50,6 +53,12 @@ export function filterPages(pages: IndexedPage[], latest: Record<string, AuditRe
 	const search = filter.search.toLocaleLowerCase();
 	return pages.filter(page => {
 		const r = latest[page.url];
+		if (filter.language !== 'any') {
+			const language = r?.metadata?.lang?.trim().toLowerCase() ?? '';
+			if (!r?.metadata || (filter.language === 'missing' ? language !== '' : `lang:${language}` !== filter.language)) {
+				return false;
+			}
+		}
 		if (filter.status === 'unscanned' && r) {
 			return false;
 		}

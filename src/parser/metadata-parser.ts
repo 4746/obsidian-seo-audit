@@ -38,5 +38,5 @@ export function parseMetadata(doc: Document): SeoMetadata {
 		}
 	}
 	const h1 = Array.from(doc.querySelectorAll('h1'), el => fieldValue(el.textContent ?? ''));
-	return {fields, alternates, h1, h1Count: h1.length};
+	return {lang: doc.documentElement.getAttribute('lang'), fields, alternates, h1, h1Count: h1.length};
 }

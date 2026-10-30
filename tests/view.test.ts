@@ -60,6 +60,42 @@ it('places clear after exports and requires confirmation before clearing results
   await s.view.onClose();
   expect(document.querySelector('.seo-audit-clear-results')).toBeNull();
 });
+it('offers the page language column and refreshes language filter choices after scans', async () => {
+  vi.useFakeTimers();
+  const s = await setup(4);
+  const saveResult = (index: number, lang: string | null) => {
+    const url = `https://page${index}.test`;
+    s.data.cache.latest[url] = { url, finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], metadata: { ...parseHtml(''), lang }, error: null };
+  };
+  saveResult(0, ' EN '); saveResult(1, 'en'); saveResult(2, null);
+  s.notify(); await vi.advanceTimersByTimeAsync(151);
+  menuFor(s.view).items.find(item => item.title === 'Settings')!.action();
+  const choice = Array.from(document.querySelectorAll<HTMLLabelElement>('.seo-audit-column-choices label')).find(label => label.textContent === 'Page language')!;
+  choice.querySelector<HTMLInputElement>('input')!.click();
+  expect(s.data.settings.visibleColumns).toContain('lang');
+  expect(s.view.contentEl.querySelector('thead')!.textContent).toContain('Page language');
+  s.view.contentEl.querySelector<HTMLTableRowElement>('tbody tr')!.click();
+  const field = Array.from(s.detailsView.contentEl.querySelectorAll('.seo-audit-detail-field')).find(field => field.querySelector('h4')?.textContent === 'Page language')!;
+  expect(field.querySelector('.seo-audit-original')!.textContent).toBe(' EN ');
+  expect(field.querySelector('.seo-audit-character-count')).toBeNull();
+  const modal = openFilters(s.view);
+  const language = modal.querySelector<HTMLSelectElement>('select[aria-label="Page language"]')!;
+  expect(Array.from(language.options).map(option => option.value)).toEqual(['any', 'missing', 'lang:en']);
+  language.value = 'lang:en'; language.dispatchEvent(new Event('change'));
+  expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(2);
+  saveResult(3, 'uk'); s.notify(); await vi.advanceTimersByTimeAsync(151);
+  expect(Array.from(language.options).map(option => option.value)).toContain('lang:uk');
+  expect(language.value).toBe('lang:en');
+  language.value = 'lang:uk'; language.dispatchEvent(new Event('change'));
+  expect(s.view.contentEl.querySelector('tbody')!.textContent).toContain('https://page3.test');
+  expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(1);
+  language.value = 'missing'; language.dispatchEvent(new Event('change'));
+  expect(s.view.contentEl.querySelector('tbody')!.textContent).toContain('https://page2.test');
+  modal.querySelector<HTMLButtonElement>('.seo-audit-filter-actions button')!.click();
+  expect(modal.querySelector<HTMLSelectElement>('select[aria-label="Page language"]')!.value).toBe('any');
+  expect(s.view.contentEl.querySelectorAll('tbody tr')).toHaveLength(4);
+  await s.view.onClose(); await s.detailsView.onClose();
+});
 it('paginates large indices and scans all/selected unique URLs', async () => {
   const s = await setup(120);
   const selection = s.view.contentEl.querySelector<HTMLElement>('.seo-audit-selection-count')!;

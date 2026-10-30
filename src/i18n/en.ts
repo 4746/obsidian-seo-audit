@@ -1,4 +1,5 @@
 export const en = {
+  lang: 'Page language',
   clearResults: 'Clear scan data', cancel: 'Cancel',
   clearResultsConfirm: 'Are you sure you want to delete all scan data? This cannot be undone. Any active scan will stop. Settings and source notes will be preserved.',
   languageCode: 'Language code',

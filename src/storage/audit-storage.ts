@@ -31,7 +31,7 @@ export function validResult(v: unknown): v is AuditResult {
 		return true;
 	}
 	const m = v.metadata;
-	return object(m) && object(m.fields) && fieldKeys.every(k => {
+	return object(m) && (m.lang === null || typeof m.lang === 'string') && object(m.fields) && fieldKeys.every(k => {
 			const values = (m.fields as Record<string, unknown>)[k];
 			return isStringField(k) ? Array.isArray(values) && values.every(value => typeof value === 'string') : validValues(values);
 		}) && validValues(m.h1)
