@@ -5,9 +5,11 @@ import type {AuditController} from './audit-controller';
 import {button, el, fileLinks} from './dom';
 import {getLengthLimit} from '../utils/metadata-length';
 
-function renderValues(parent: HTMLElement, label: string, values: FieldValue[] | string[], t: Translator, limit: number | null = null): void {
+function renderValues(parent: HTMLElement, label: string | null, values: FieldValue[] | string[], t: Translator, limit: number | null = null): void {
 	const field = el(parent, 'div', undefined, 'seo-audit-detail-field');
-	el(field, 'h4', label);
+	if (label !== null) {
+		el(field, 'h4', label);
+	}
 	if (!values.length) {
 		el(field, 'p', t('missing'), 'seo-audit-missing');
 		return;
@@ -65,12 +67,21 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
 	closeButton.classList.add('clickable-icon', 'seo-audit-detail-close');
 	closeButton.setAttribute('aria-label', t('close'));
 	setIcon(closeButton, 'x');
-	const link = el(host, 'a', page.url, 'seo-audit-detail-url');
+	const linkRow = (parent: HTMLElement, iconName: string): HTMLElement => {
+		const row = el(parent, 'div', undefined, 'seo-audit-detail-link-row');
+		const icon = el(row, 'span', undefined, 'seo-audit-detail-link-icon');
+		icon.setAttribute('aria-hidden', 'true');
+		setIcon(icon, iconName);
+		return el(row, 'div', undefined, 'seo-audit-detail-link-scroll');
+	};
+	const link = el(linkRow(host, 'globe'), 'a', page.url, 'seo-audit-detail-url');
 	link.href = page.url;
 	link.target = '_blank';
 	link.rel = 'noopener noreferrer';
 	const sources = el(host, 'div', undefined, 'seo-audit-detail-sources');
-	fileLinks(sources, page, t, openFile);
+	for (const path of page.files) {
+		fileLinks(linkRow(sources, 'file-text'), {...page, files: [path]}, t, openFile);
+	}
 	if (!r) {
 		const empty = el(host, 'div', undefined, 'seo-audit-detail-empty');
 		empty.setAttribute('role', 'status');
@@ -100,12 +111,17 @@ export function renderAuditDetails(host: HTMLElement, controller: AuditControlle
 		return el(details, 'div', undefined, 'seo-audit-detail-section-body');
 	};
 	const response = section('response', t('httpResponse'), true);
-	const info = el(response, 'dl');
+	const table = el(response, 'table', undefined, 'seo-audit-response-table');
+	table.setAttribute('aria-label', t('httpResponse'));
+	const info = el(table, 'tbody');
 	for (const [label, value] of [[t('url'), r.url], [t('finalUrl'), r.finalUrl ?? t('unknown')], [t('status'), r.status ?? t('unknown')], [t('responseTimeMs'), r.responseTimeMs ?? t('unknown')], [t('scannedAt'), new Date(r.scannedAt).toLocaleString()]]) {
-		el(info, 'dt', String(label));
-		el(info, 'dd', String(value));
+		const row = el(info, 'tr');
+		el(row, 'th', String(label)).scope = 'row';
+		el(row, 'td', String(value));
 	}
-	renderValues(response, t('xRobotsTag'), r.xRobotsTag, t);
+	const robotsRow = el(info, 'tr');
+	el(robotsRow, 'th', t('xRobotsTag')).scope = 'row';
+	renderValues(el(robotsRow, 'td'), null, r.xRobotsTag, t);
 	const groups: { id: string; label: string; keys: FieldKey[] }[] = [
 		{id: 'seo', label: t('basicSeo'), keys: ['title', 'description', 'canonical', 'robots']},
 		{id: 'og', label: t('openGraph'), keys: ['og:title', 'og:description', 'og:image']},
