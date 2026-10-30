@@ -3,6 +3,7 @@ import type {AuditController} from './audit-controller';
 import {renderAuditTable, type AuditTableState} from './audit-table';
 import {TableSettingsModal} from './table-settings-modal';
 import {AuditFiltersModal} from './audit-filters-modal';
+import {ClearResultsModal} from './clear-results-modal';
 import {download, exportCsv, exportJson} from '../export/export-service';
 import {button, el} from './dom';
 import type {AuditResult} from '../types';
@@ -19,6 +20,7 @@ export class AuditView extends ItemView {
 	private selectionHost!: HTMLElement;
 	private filtersModal: AuditFiltersModal | null = null;
 	private settingsModal: TableSettingsModal | null = null;
+	private clearResultsModal: ClearResultsModal | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private renderTimer: number | undefined;
 	private lastLocale = '';
@@ -65,6 +67,11 @@ export class AuditView extends ItemView {
 				}
 			}));
 		}
+		menu.addItem(item => item.setTitle(t('clearResults')).setIcon('trash-2').setDisabled(!Object.keys(this.plugin.data.cache.latest).length).onClick(() => {
+			this.clearResultsModal?.close();
+			this.clearResultsModal = new ClearResultsModal(this.app, this.plugin);
+			this.clearResultsModal.open();
+		}));
 		menu.addItem(item => item.setTitle(t('tableSettings')).setIcon('settings').onClick(() => {
 			this.settingsModal?.close();
 			this.settingsModal = new TableSettingsModal(this.app, this.plugin, () => this.renderTable());
@@ -103,6 +110,7 @@ export class AuditView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		this.clearResultsModal?.close();
 		this.settingsModal?.close();
 		this.filtersModal?.close();
 		this.unsubscribe?.();

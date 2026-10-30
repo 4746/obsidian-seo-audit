@@ -26,7 +26,7 @@ async function setup(count = 2) {
   const scan = vi.fn(); const scheduleSave = vi.fn(); const openLinkText = vi.fn(); const openFile = vi.fn();
   const getFileByPath = vi.fn((path: string) => ({ path }));
   const openDetails = vi.fn((url: string) => { detailsView.setPage(url); document.body.appendChild(detailsView.contentEl); });
-  const plugin = { data, index, scan, scheduleSave, openDetails, t: translator('en', 'en'), scanner: { progress: { running: false, total: 0, active: 0, completed: 0 }, stop: vi.fn() },
+  const plugin = { data, index, scan, scheduleSave, openDetails, clearResults: vi.fn(async () => {}), t: translator('en', 'en'), scanner: { progress: { running: false, total: 0, active: 0, completed: 0 }, stop: vi.fn() },
     subscribe: (callback: () => void) => { listeners.add(callback); return () => { listeners.delete(callback); }; }, reindex: vi.fn() };
   const detach = vi.fn();
   const leaf = { app: { vault: { getFileByPath }, workspace: { openLinkText, getLeaf: () => ({ openFile }) } }, detach } as unknown as WorkspaceLeaf;
@@ -36,6 +36,30 @@ async function setup(count = 2) {
   await view.onOpen(); document.body.appendChild(view.contentEl);
   return { view, detailsView, detach, plugin, data, scan, scheduleSave, openLinkText, openFile, getFileByPath, notify: () => { for (const listener of listeners) listener(); } };
 }
+it('places clear after exports and requires confirmation before clearing results', async () => {
+  const s = await setup();
+  expect(menuFor(s.view).items.find(item => item.title === 'Clear scan data')!.disabled).toBe(true);
+  s.data.cache.latest['https://page0.test'] = { url: 'https://page0.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 1, xRobotsTag: [], metadata: parseHtml('<title>Saved result</title>'), error: null };
+  const menu = menuFor(s.view);
+  const clearIndex = menu.items.findIndex(item => item.title === 'Clear scan data');
+  expect(menu.items[clearIndex - 1]!.title).toBe('Export CSV');
+  expect(menu.items[clearIndex]!.disabled).toBe(false);
+  menu.items[clearIndex]!.action();
+  expect(s.plugin.clearResults).not.toHaveBeenCalled();
+  let dialog = document.querySelector<HTMLElement>('.seo-audit-clear-results')!;
+  expect(dialog.textContent).toContain('Are you sure');
+  dialog.querySelector<HTMLButtonElement>('button')!.click();
+  expect(s.plugin.clearResults).not.toHaveBeenCalled();
+  expect(Object.keys(s.data.cache.latest)).toHaveLength(1);
+  menu.items[clearIndex]!.action();
+  dialog = document.querySelector<HTMLElement>('.seo-audit-clear-results')!;
+  dialog.querySelector<HTMLButtonElement>('.mod-warning')!.click();
+  expect(s.plugin.clearResults).toHaveBeenCalledOnce();
+  expect(document.querySelector('.seo-audit-clear-results')).toBeNull();
+  menu.items[clearIndex]!.action();
+  await s.view.onClose();
+  expect(document.querySelector('.seo-audit-clear-results')).toBeNull();
+});
 it('paginates large indices and scans all/selected unique URLs', async () => {
   const s = await setup(120);
   const selection = s.view.contentEl.querySelector<HTMLElement>('.seo-audit-selection-count')!;

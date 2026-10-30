@@ -4,8 +4,48 @@ import { TFile } from 'obsidian';
 import { VaultUrlIndexer } from '../src/indexer/url-indexer';
 import { AuditStorage, loadData } from '../src/storage/audit-storage';
 import { normalizeUrl } from '../src/utils/normalize-url';
+import type { PluginData } from '../src/types';
 
 afterEach(() => vi.useRealTimers());
+
+it('persists clearing after a pending write and retains settings', async () => {
+  vi.useFakeTimers();
+  const data = loadData(null);
+  data.settings.urlProperty = 'published';
+  data.cache.latest['https://a.test'] = { url: 'https://a.test', finalUrl: null, scannedAt: new Date().toISOString(), status: 200, responseTimeMs: 10, xRobotsTag: [], metadata: null, error: null };
+  const snapshots: PluginData[] = [];
+  let finishWrite = () => {};
+  const storage = new AuditStorage(data, async snapshot => {
+    if (!snapshots.length) await new Promise<void>(resolve => { finishWrite = resolve; });
+    snapshots.push(snapshot);
+  }, vi.fn());
+  storage.scheduleSave();
+  const pending = storage.flush();
+  await Promise.resolve(); await Promise.resolve();
+  const clearing = storage.clearResults();
+  expect(data.cache.latest).toEqual({});
+  finishWrite();
+  await pending; await clearing;
+  expect(Object.keys(snapshots[0]!.cache.latest)).toEqual(['https://a.test']);
+  expect(snapshots[1]!.cache.latest).toEqual({});
+  expect(snapshots[1]!.settings).toEqual(data.settings);
+  expect(loadData(JSON.parse(JSON.stringify(snapshots[1]))).cache.latest).toEqual({});
+  storage.dispose();
+});
+
+it('reports a failed clear save and allows retrying it', async () => {
+  vi.useFakeTimers();
+  const data = loadData(null);
+  const write = vi.fn().mockRejectedValueOnce(new Error('disk')).mockResolvedValue(undefined);
+  const error = vi.fn();
+  const storage = new AuditStorage(data, write, error);
+  await storage.clearResults();
+  expect(error).toHaveBeenCalledOnce();
+  await storage.flush();
+  expect(write).toHaveBeenCalledTimes(2);
+  expect(write.mock.calls[1]![0].cache.latest).toEqual({});
+  storage.dispose();
+});
 
 function vaultFixture() {
   const handlers = new Map<string, (...args: unknown[]) => void>();

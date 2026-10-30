@@ -110,6 +110,13 @@ export class AuditStorage {
 		}
 	}
 
+	/** Queue an empty cache after pending writes, retaining all plugin settings. */
+	async clearResults(): Promise<void> {
+		this.data.cache.latest = Object.create(null) as Record<string, AuditResult>;
+		this.scheduleSave();
+		await this.flush();
+	}
+
 	dispose(): void {
 		this.disposed = true;
 		window.clearTimeout(this.timer);
