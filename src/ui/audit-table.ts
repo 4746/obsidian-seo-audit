@@ -19,7 +19,7 @@ export function columnValue(page: IndexedPage, result: AuditResult | undefined, 
 		return null;
 	}
 	if (fieldKeys.includes(column as FieldKey)) {
-		return result.metadata?.fields[column as FieldKey].map(v => v.value).join(' · ') ?? null;
+		return result.metadata?.fields[column as FieldKey].map(v => typeof v === 'string' ? v : v.value).join(' · ') ?? null;
 	}
 	switch (column) {
 		case 'h1Count':
@@ -66,7 +66,7 @@ export function filterPages(pages: IndexedPage[], latest: Record<string, AuditRe
 			if (filter.field !== 'url' && !r) {
 				return false;
 			}
-			const has = filter.field === 'url' ? page.url.trim().length > 0 : r?.metadata?.fields[filter.field].some(v => v.value.trim().length > 0) ?? false;
+			const has = filter.field === 'url' ? page.url.trim().length > 0 : r?.metadata?.fields[filter.field].some(v => (typeof v === 'string' ? v : v.value).trim().length > 0) ?? false;
 			if (filter.presence === 'present' ? !has : has) {
 				return false;
 			}

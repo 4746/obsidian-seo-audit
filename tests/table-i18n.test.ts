@@ -30,3 +30,13 @@ it('uses Obsidian locale, manual override and English fallback', () => {
   expect(translator('en', 'uk')('stop')).toBe('Stop');
   expect(translator('auto', 'de')('stop')).toBe('Stop');
 });
+it('searches, sorts and filters canonical strings, including empty and missing values', () => {
+  const scanned = {
+    [pages[0]!.url]: { ...result, metadata: parseHtml('<link rel="canonical" href="https://z.test/😀">') },
+    [pages[1]!.url]: { ...result, url: pages[1]!.url, metadata: parseHtml('<link rel="canonical" href="  ">') },
+  };
+  expect(filterPages(pages, scanned, { ...base, search: 'z.test/😀' })).toEqual([pages[0]]);
+  expect(filterPages(pages, scanned, { ...base, field: 'canonical', presence: 'present' })).toEqual([pages[0]]);
+  expect(filterPages(pages, scanned, { ...base, field: 'canonical', presence: 'missing' })).toEqual([pages[1]]);
+  expect(filterPages(pages, scanned, { ...base, sort: 'canonical' })).toEqual([pages[1], pages[0], pages[2]]);
+});

@@ -5,7 +5,7 @@ export const lengthFields = ['title', 'description', 'og:title', 'og:description
 export type LengthField = typeof lengthFields[number];
 export type AlternateLinks = Record<string, string | string[]>;
 export interface SeoMetadata {
-  fields: Record<FieldKey, FieldValue[]>;
+  fields: Record<Exclude<FieldKey, 'canonical'>, FieldValue[]> & { canonical: string[] };
   alternates: AlternateLinks;
   h1: FieldValue[];
   h1Count: number;

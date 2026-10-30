@@ -7,6 +7,16 @@ import type { AuditResult, PluginData } from '../src/types';
 
 const result: AuditResult = { url: 'https://a.test', finalUrl: null, scannedAt: '2026-10-29T00:00:00Z', status: 200, responseTimeMs: 42, xRobotsTag: [], error: null, metadata: parseHtml('<title>=HYPERLINK("bad")</title><meta name="description" content="one"><meta name="description" content="two">') };
 describe('storage', () => {
+  it('round-trips canonical strings and rejects invalid entries without migrating them', () => {
+    const data = loadData(null);
+    data.cache.latest[result.url] = { ...result, metadata: parseHtml('<link rel="canonical" href="https://fbfast.io"><link rel="canonical" href="/😀">') };
+    expect(loadData(JSON.parse(JSON.stringify(data)))).toEqual(data);
+    for (const canonical of [[{ value: 'https://fbfast.io', length: 17 }], [42], [null], 'https://fbfast.io']) {
+      const bad = JSON.parse(JSON.stringify(data)) as PluginData;
+      Object.assign(bad.cache.latest[result.url]!.metadata!.fields, { canonical });
+      expect(() => loadData(bad)).toThrow(/cache/);
+    }
+  });
   it('defaults issue highlights to enabled and preserves an explicit disabled setting', () => {
     expect(cleanSettings(null).highlightIssues).toBe(true);
     expect(cleanSettings({ highlightIssues: false }).highlightIssues).toBe(false);
@@ -51,4 +61,14 @@ it('exports every source, duplicate field and Unicode length as JSON and CSV', (
   const csv = exportCsv(pages, latest);
   expect(csv).toContain('"\'=formula"');
   expect(csv).toContain('b.md'); expect(csv).toContain('""length""'); expect(csv).toContain('HYPERLINK(\\""bad\\"")');
+});
+it('exports canonical as string arrays in JSON and CSV', () => {
+  const canonical = ['https://fbfast.io', '/😀?q="quoted"', 'https://fbfast.io'];
+  const metadata = parseHtml('');
+  metadata.fields.canonical = canonical;
+  const latest = { [result.url]: { ...result, metadata } };
+  const pages = [{ url: result.url, files: [] }];
+  const json = JSON.parse(exportJson(pages, latest)) as { pages: { result: AuditResult }[] };
+  expect(json.pages[0]!.result.metadata!.fields.canonical).toEqual(canonical);
+  expect(exportCsv(pages, latest)).toContain(`"${JSON.stringify(canonical).replace(/"/g, '""')}"`);
 });

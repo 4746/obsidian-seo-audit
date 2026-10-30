@@ -6,6 +6,10 @@ describe('code point length', () => {
   it.each([['', 0], ['SEO', 3], ['Україна', 7], ['😀𐐀', 2], ['e\u0301', 2], ['👩‍💻', 3]])('counts %s as %i', (s, n) => expect(codePointLength(s)).toBe(n));
 });
 describe('HTML parser', () => {
+  it('stores canonical strings in document order without changing or deduplicating URLs', () => {
+    const m = parseHtml('<link rel="canonical" href="https://fbfast.io"><link rel="canonical" href=" /😀?a=1&amp;b=2 "><link rel="canonical" href="https://fbfast.io"><link rel="canonical" href=""><link rel="canonical">');
+    expect(m.fields.canonical).toEqual(['https://fbfast.io', ' /😀?a=1&b=2 ', 'https://fbfast.io', '']);
+  });
   it('stores language URLs directly and preserves repeated codes and unusual keys', () => {
     const m = parseHtml('<link rel="alternate" hreflang="de" href="/de"><link rel="alternate" hreflang="de" href="/de/other"><link rel="alternate" hreflang="de" href="/de"><link rel="alternate" hreflang="uk" href="/uk"><link rel="alternate" hreflang="__proto__" href="/safe">');
     expect(m.alternates.de).toEqual(['/de', '/de/other', '/de']);
@@ -18,7 +22,7 @@ describe('HTML parser', () => {
     expect(m.fields.title).toEqual([{ value: ' A 😀 & B ', length: 9 }]);
     expect(m.fields.description).toEqual([{ value: 'one', length: 3 }, { value: '', length: 0 }]);
     expect(m.fields.robots.map(x => x.value)).toEqual(['noindex', 'nofollow']);
-    expect(m.fields.canonical).toEqual([{ value: '/😀', length: 2 }]);
+    expect(m.fields.canonical).toEqual(['/😀']);
     expect(m.h1).toEqual([{ value: 'First 😀', length: 7 }, { value: 'Second', length: 6 }]);
     expect(m.h1Count).toBe(2);
   });
