@@ -30,7 +30,7 @@
 .seo-audit .seo-audit-table { table-layout: auto; width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
 .seo-audit .seo-audit-table th:first-child { width: 36px; min-width: 36px; }
 .seo-audit .seo-audit-table th { min-width: 160px; overflow-wrap: anywhere; }
-.seo-audit .seo-audit-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; padding: 8px 12px; border: 1px solid var(--background-modifier-border); border-radius: 6px; background: var(--background-secondary); }
+.seo-audit .seo-audit-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; padding: 8px 12px; border-radius: 6px; }
 /* Match the view width while the containing block spans the entire table. */
 .seo-audit-main .seo-audit-pagination { position: sticky; left: 0; width: 100cqw; box-sizing: border-box; }
 .seo-audit-main .seo-audit-table-controls { position: sticky; left: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100cqw; box-sizing: border-box; margin: 16px 0 12px; }
